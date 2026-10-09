@@ -13,7 +13,7 @@ Both decision models are called the same way, through the OpenAI-compatible **De
 | | top 5 tools | top 10 tools |
 |---|---|---|
 | **Jev** (`typesafe-ai/jev`, trained with RLCD) | ✓ | ✓ |
-| **OpenAI decisions** (`openai/gpt-6-luna-decisions`) | ✓ | ✓ |
+| **OpenAI decisions** (`openai/gpt-6-luna`) | ✓ | ✓ |
 
 That's 4 variations × 3 benchmarks.
 
@@ -47,7 +47,7 @@ cp .env.example .env                        # add AI_GATEWAY_API_KEY
 Or from the CLI (same defaults as the dashboard):
 
 ```bash
-.venv/bin/python -m bench.routing --benchmark atlas --routers jev,decision:openai/gpt-6-luna-decisions --ks 1,5,10
+.venv/bin/python -m bench.routing --benchmark atlas --routers jev,decision:openai/gpt-6-luna --ks 1,5,10
 .venv/bin/python -m bench.report results/routing/<run>       # PNG charts + REPORT.md
 ```
 

@@ -44,13 +44,17 @@ table.grid2 .t { font-size: 12px; color: var(--muted); font-weight: 400; }
 <body>
 <main>
   <h1>Jev as a tool router for MCP agents</h1>
-  <p class="sub">Instead of loading every MCP tool into the agent's context, Jev (TypeSafe's RLCD decision model, called through the OpenAI Decisions API on Vercel AI Gateway) hands the agent only the 5 or 10 tools it needs next. Each run compares Jev with OpenAI's decision model on three public MCP benchmarks.</p>
+  <p class="sub">Instead of loading every MCP tool into the agent's context, Jev (TypeSafe's RLCD decision model, via the Decisions API on Vercel AI Gateway) hands the agent only the 5 or 10 tools it needs next. Each run compares Jev with OpenAI's decision model (gpt-6-luna, same Decisions API) on three public MCP benchmarks.</p>
 
-  <div class="key" id="keyrow">
-    <input id="key" type="password" placeholder="Vercel AI Gateway API key" autocomplete="off">
-    <button onclick="saveKey()">Save key</button>
+  <div class="key" id="key-openai">
+    <input id="k-openai" type="password" placeholder="OpenAI API key (OpenAI decision model)" autocomplete="off">
+    <button onclick="saveKey('openai')">Save</button>
   </div>
-  <div class="key" id="keyok" hidden><span class="ok">✓ AI Gateway key saved</span><span id="mockflag"></span></div>
+  <div class="key" id="key-gateway">
+    <input id="k-gateway" type="password" placeholder="Vercel AI Gateway key (Jev)" autocomplete="off">
+    <button onclick="saveKey('gateway')">Save</button>
+  </div>
+  <div class="key"><span class="ok" id="keyok"></span><span id="mockflag"></span></div>
 
   <div class="grid" id="cards"></div>
 </main>
@@ -59,7 +63,7 @@ const $ = id => document.getElementById(id);
 const pct = v => v == null ? '—' : (v * 100).toFixed(1) + '%';
 const num = v => v == null ? '—' : Math.round(v).toLocaleString();
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
-const LABEL = n => n === 'jev' ? 'Jev' : n.includes('luna') || n.includes('openai') ? 'OpenAI decisions' : n;
+const LABEL = n => n === 'jev' ? 'Jev' : n.includes('luna') ? 'OpenAI gpt-6-luna' : n;
 const METRIC = {  // what "right" means for each benchmark's gold labels
   step: ['hit', 'right tool offered', 'the tool the reference agent called next is in the shortlist'],
   task: ['recall', 'needed tools offered', 'share of the tools the task needs that are in the shortlist'],
@@ -74,8 +78,8 @@ async function api(path, body) {
   return j;
 }
 
-async function saveKey() {
-  try { await api('/api/key', {key: $('key').value}); $('key').value = ''; refresh(); } catch (e) { alert(e.message); }
+async function saveKey(which) {
+  try { await api('/api/key', {which, key: $('k-' + which).value}); $('k-' + which).value = ''; refresh(); } catch (e) { alert(e.message); }
 }
 async function run(b) {
   try { await api('/api/run/' + b, {}); refresh(); } catch (e) { alert(e.message); }
@@ -88,7 +92,10 @@ function result(r) {
   const mock = Object.values(rs).some(v => v.mock);
   const full = r.catalog_tokens;
   const cell = (v, k) => `<td><div class="v">${pct(v[`${m}@${k}`])}</div><div class="t">${num(v[`tokens@${k}`])} tok</div></td>`;
-  const rows = Object.entries(rs).map(([n, v]) => `<tr><td><b>${esc(LABEL(n))}</b>
+  const all = {jev: rs.jev, ...rs};
+  if (!rs['gpt-6-luna']) all['gpt-6-luna'] = null;
+  if (!rs.jev) all.jev = null;
+  const rows = Object.entries(all).map(([n, v]) => !v ? `<tr><td><b>${esc(LABEL(n))}</b></td>${ks.map(() => '<td class="t">not run yet</td>').join('')}</tr>` : `<tr><td><b>${esc(LABEL(n))}</b>
       <div class="t">${v.latency_p50_ms == null ? '—' : v.latency_p50_ms.toFixed(0) + ' ms'} · $${((v.cost_per_call_usd || 0) * 1000).toFixed(3)}/1k calls${v.ece != null ? ` · ECE ${v.ece.toFixed(3)}` : ''}${v.errors ? ` · <span style="color:var(--bad)">${v.errors} errors</span>` : ''}</div></td>` +
     ks.map(k => cell(v, k)).join('') + '</tr>').join('');
   return `${mock ? '<div><span class="mock">MOCK — not real results</span></div>' : ''}
@@ -99,8 +106,9 @@ function result(r) {
 
 async function refresh() {
   const s = await api('/api/state');
-  keySet = s.key_set || s.mock;
-  $('keyrow').hidden = keySet; $('keyok').hidden = !keySet;
+  keySet = s.models_ready.length > 0 || s.mock;
+  $('key-openai').hidden = s.keys.openai; $('key-gateway').hidden = s.keys.gateway;
+  $('keyok').textContent = [s.keys.openai && '✓ OpenAI key saved', s.keys.gateway && '✓ AI Gateway key saved'].filter(Boolean).join('   ');
   $('mockflag').innerHTML = s.mock ? ' <span class="mock">mock mode</span>' : '';
   $('cards').innerHTML = Object.entries(s.benchmarks).map(([b, x]) => {
     const c = x.catalog;

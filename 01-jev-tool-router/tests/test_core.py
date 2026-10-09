@@ -120,8 +120,8 @@ def test_metrics():
 def test_make_router_specs():
     assert make_router("jev").name == "jev"
     assert make_router("jev:two_stage").strategy == "two_stage"
-    r = make_router("decision:openai/gpt-6-luna-decisions:flat")
-    assert r.model == "openai/gpt-6-luna-decisions" and r.strategy == "flat"
+    r = make_router("decision:openai/gpt-6-luna:flat")
+    assert r.model == "openai/gpt-6-luna" and r.strategy == "flat"
     assert parse_model("jev@k3::anthropic/claude-sonnet-4.5") == ("", "jev@k3", "anthropic/claude-sonnet-4.5")
     assert parse_model("run7|bm25@k5~0.9::x/y") == ("run7", "bm25@k5~0.9", "x/y")
     assert parse_model("openai/gpt-4o") == ("", "full", "openai/gpt-4o")
@@ -178,5 +178,5 @@ async def test_server_mode_scores_servers_covered_by_top_k_tools():
 
 
 def test_decision_spec_without_strategy_keeps_full_slug():
-    r = make_router("decision:openai/gpt-6-luna-decisions")
-    assert r.model == "openai/gpt-6-luna-decisions" and r.strategy == "auto"
+    r = make_router("decision:openai/gpt-6-luna")
+    assert r.model == "openai/gpt-6-luna" and r.strategy == "auto"

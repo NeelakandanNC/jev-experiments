@@ -107,7 +107,7 @@ async def main_async(args) -> Path:
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--benchmark", choices=BENCHMARKS, required=True)
-    ap.add_argument("--routers", default="jev,decision:openai/gpt-6-luna-decisions")
+    ap.add_argument("--routers", default="jev,decision:openai/gpt-6-luna")
     ap.add_argument("--ks", default="1,5,10")
     ap.add_argument("--adaptive", type=float, default=0.9, help="probability mass for adaptive-k (0 disables)")
     ap.add_argument("--limit-tasks", type=int, default=None)

@@ -3,7 +3,9 @@
     POST https://ai-gateway.vercel.sh/v1/decisions
     {model, input, questions: [{type: predicate|choice|score, name, instructions, choices|levels}]}
 
-Any decision model on the gateway works (typesafe-ai/jev, openai/gpt-6-luna-decisions, ...).
+Any decision model on the gateway works (typesafe-ai/jev, openai/gpt-6-luna, ...). OpenAI models
+("openai/<model>") go straight to api.openai.com instead when OPENAI_API_KEY is set: same
+Decisions API, same request and response shapes.
 Set JEVROUTE_MOCK=1 to answer locally with a lexical heuristic: for plumbing tests only,
 results produced that way are tagged mock and must never be reported.
 """
@@ -20,7 +22,22 @@ from typing import Any
 from openai import AsyncOpenAI
 
 GATEWAY_BASE_URL = os.getenv("AI_GATEWAY_BASE_URL", "https://ai-gateway.vercel.sh/v1")
+OPENAI_BASE_URL = "https://api.openai.com/v1"
 MAX_CHOICES = 255
+# List input price per 1M tokens, for responses that don't report cost (OpenAI direct).
+# Decision calls bill input only. Check https://openai.com/api/pricing before quoting.
+INPUT_PRICE_PER_MTOK = {"gpt-6-luna": 0.10}
+
+
+def backend(model: str) -> tuple[str, str, str]:
+    """(base_url, api key env var, model name to send) for a decision model slug."""
+    if model.startswith("openai/") and os.getenv("OPENAI_API_KEY") and not os.getenv("JEVROUTE_FORCE_GATEWAY"):
+        return OPENAI_BASE_URL, "OPENAI_API_KEY", model.split("/", 1)[1]
+    return GATEWAY_BASE_URL, "AI_GATEWAY_API_KEY", model
+
+
+def has_key(model: str) -> bool:
+    return bool(os.getenv(backend(model)[1]))
 
 
 @dataclass
@@ -63,11 +80,11 @@ class DecisionClient:
         self.mock = is_mock()
         self._client = None
         if not self.mock:
-            key = api_key or os.getenv("AI_GATEWAY_API_KEY")
+            url, key_var, self.wire_model = backend(model)
+            key = api_key or os.getenv(key_var)
             if not key:
-                raise DecisionError("AI_GATEWAY_API_KEY is not set (or set JEVROUTE_MOCK=1 for a dry run)")
-            self._client = AsyncOpenAI(api_key=key, base_url=base_url or GATEWAY_BASE_URL,
-                                       timeout=timeout, max_retries=max_retries)
+                raise DecisionError(f"{key_var} is not set (needed for {model}; JEVROUTE_MOCK=1 for a dry run)")
+            self._client = AsyncOpenAI(api_key=key, base_url=base_url or url, timeout=timeout, max_retries=max_retries)
 
     async def decide(self, input: str, questions: list[dict[str, Any]]) -> Decision:
         for q in questions:
@@ -77,12 +94,16 @@ class DecisionClient:
             return _mock_decide(self.model, input, questions)
 
         t0 = time.perf_counter()
-        resp = await self._client.decisions.with_raw_response.create(model=self.model, input=input, questions=questions)
+        resp = await self._client.decisions.with_raw_response.create(model=self.wire_model, input=input,
+                                                                    questions=questions)
         latency = time.perf_counter() - t0
         body = resp.http_response.json()
         if "error" in body:
             raise DecisionError(body["error"].get("message", str(body["error"])))
-        return _parse(body, latency)
+        d = _parse(body, latency)
+        if not d.cost_usd and self.wire_model in INPUT_PRICE_PER_MTOK:
+            d.cost_usd = d.input_tokens * INPUT_PRICE_PER_MTOK[self.wire_model] / 1e6
+        return d
 
     async def aclose(self) -> None:
         if self._client:
