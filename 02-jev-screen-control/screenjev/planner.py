@@ -31,10 +31,12 @@ radio, toggle, dropdown, tab, slider, icon, back arrow, close X, menu icon, sear
 scrollbar, plain text), and roughly where it is.
 
 Actions (JSON keys in brackets):
-  click         [target]                     click an element (buttons, links, checkboxes, tabs, text, ...)
+  click         [target, modifiers?]         click an element (buttons, links, checkboxes, tabs, text, ...);
+                                             modifiers = keys held while clicking: "ctrl", "shift", "alt"
   double_click  [target]
   type          [target, text, submit]       focus a text field, replace its content with `text`; submit=true presses Enter after
-  select        [target, option]             choose `option` in a dropdown
+  select        [target, option]             choose `option` in a dropdown or list box (in a multi-select list it adds
+                                             `option` to the selection and never unselects anything; one option per action)
   scroll        [direction, target?]         direction "up" or "down"; target = the scrollable area (omit for the whole screen)
   key           [key]                        a key or chord: Enter, Tab, Escape, Backspace, ctrl+a
   back          []                           go back (browser / Android back)
@@ -47,7 +49,7 @@ Rules:
 - One action per reply. Check the screenshot to see whether the previous action worked before repeating it.
 - If the history says a target could not be found, describe it differently or change approach.
 - Reply with JSON only: {{"thought": "<one or two sentences>", "action": "...", "target": "...", "text": "...",
-  "submit": false, "option": "...", "direction": "...", "key": "...", "reason": "..."}} (omit keys you don't need).{extra}"""
+  "submit": false, "option": "...", "direction": "...", "key": "...", "modifiers": "...", "reason": "..."}} (omit keys you don't need).{extra}"""
 
 SOM_EXTRA = """
 - The screenshot has numbered boxes, and the element list gives each box's id. For click / double_click /
@@ -66,6 +68,7 @@ class Step:
     reason: str = ""
     thought: str = ""
     element: str = ""  # som only
+    modifiers: str = ""
 
     def describe(self) -> str:
         a = self.action
@@ -78,7 +81,8 @@ class Step:
         if a == "key":
             return f"press {self.key}"
         if a in TARGETED:
-            return f"{a.replace('_', ' ')} {self.target}"
+            mod = f"{self.modifiers}+" if self.modifiers else ""
+            return f"{mod}{a.replace('_', ' ')} {self.target}"
         return a
 
     def to_json(self) -> dict[str, Any]:
@@ -90,7 +94,7 @@ def parse_step(data: dict[str, Any]) -> Step:
     if action not in ACTIONS:
         action = "fail" if not action else ("click" if "click" in action else "wait")
     s = Step(action=action)
-    for k in ("target", "text", "option", "direction", "key", "reason", "thought", "element"):
+    for k in ("target", "text", "option", "direction", "key", "reason", "thought", "element", "modifiers"):
         v = data.get(k)
         if v is not None:
             setattr(s, k, str(v))

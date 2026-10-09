@@ -83,9 +83,20 @@ class BrowserDevice(Device):
         png = await self.page.screenshot(clip=self.clip, type="png")
         return Image.open(io.BytesIO(png)).convert("RGB")
 
-    async def click(self, x, y):
-        await self.page.mouse.click(*self.to_css(x, y))
+    async def click(self, x, y, modifiers: str = ""):
+        mods = [pw_key(m) for m in modifiers.replace("-", "+").split("+") if m.strip()]
+        for m in mods:
+            await self.page.keyboard.down(m)
+        try:
+            await self.page.mouse.click(*self.to_css(x, y))
+        finally:
+            for m in reversed(mods):
+                await self.page.keyboard.up(m)
         await self._close_native_popup()
+        if not mods and await self.page.evaluate(
+                "(() => { const a = document.activeElement; return !!a && a.tagName === 'SELECT' && a.multiple; })()"):
+            self.note = ("that is a multi-select list: a plain click selects only the clicked option; to have "
+                         "several selected, use the select action once per option (it adds, never unselects)")
 
     async def double_click(self, x, y):
         await self.page.mouse.dblclick(*self.to_css(x, y))
@@ -95,7 +106,8 @@ class BrowserDevice(Device):
         # A clicked <select> opens a native popup that isn't in screenshots and blocks them in headless
         # Chromium. Close it; the select stays focused, and the `select` action picks options by text.
         try:
-            if await self.page.evaluate("document.activeElement && document.activeElement.tagName === 'SELECT'"):
+            if await self.page.evaluate("(() => { const a = document.activeElement;"
+                                        " return !!a && a.tagName === 'SELECT' && !a.multiple && a.size <= 1; })()"):
                 await self.page.keyboard.press("Escape")
                 self.note = ("that is a dropdown list whose options open off-screen: use the select action "
                              "with this target and the option's text")
@@ -126,7 +138,8 @@ class BrowserDevice(Device):
             const w = norm(want);
             const opt = [...el.options].find(o => norm(o.text) === w) || [...el.options].find(o => norm(o.text).includes(w));
             if (!opt) return false;
-            el.value = opt.value;
+            if (el.multiple) opt.selected = true;  // multi-select list: add to the selection
+            else el.value = opt.value;
             el.dispatchEvent(new Event('input', {bubbles: true}));
             el.dispatchEvent(new Event('change', {bubbles: true}));
             return true;

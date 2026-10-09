@@ -54,25 +54,40 @@ class Element:
         return x1 <= x <= x2 and y1 <= y <= y2
 
     def point_for(self, target: str) -> tuple[float, float]:
-        """Where to click. For a run of OCR text, the words the target quotes (`the link "in."`), if present."""
-        if self.parts and target:
-            norm = lambda t: re.sub(r"[^a-z0-9]+", "", t.lower())
-            for q in re.findall(r'"([^"]+)"|“([^”]+)”|‘([^’]+)’|\'([^\']+)\'', target):
-                want = norm(next(x for x in q if x))
-                if not want:
-                    continue
-                words = [norm(w) for w, _ in self.parts]
-                for i in range(len(words)):
-                    acc = ""
-                    for j in range(i, len(words)):
-                        acc += words[j]
-                        if acc == want:
-                            boxes = [b for _, b in self.parts[i:j + 1]]
-                            return ((min(b[0] for b in boxes) + max(b[2] for b in boxes)) / 2,
-                                    (min(b[1] for b in boxes) + max(b[3] for b in boxes)) / 2)
-                        if not want.startswith(acc):
-                            break
-        return self.center
+        """Where to click. Inside a multi-word element (a text run, a list box, a wide link box), the words the
+        target names: quoted ones first (`the link "in."`), else the longest run of the element's words that
+        the target mentions ("Joann, the first option in the list"). Otherwise the center."""
+        if len(self.parts) < 2 or not target:
+            return self.center
+        norm = lambda t: re.sub(r"[^a-z0-9]+", "", t.lower())
+        words = [norm(w) for w, _ in self.parts]
+
+        def span(i, j):
+            boxes = [b for _, b in self.parts[i:j + 1]]
+            return ((min(b[0] for b in boxes) + max(b[2] for b in boxes)) / 2,
+                    (min(b[1] for b in boxes) + max(b[3] for b in boxes)) / 2)
+
+        for q in re.findall(r'"([^"]+)"|“([^”]+)”|‘([^’]+)’|\'([^\']+)\'', target):
+            want = norm(next(x for x in q if x))
+            for i in range(len(words)):
+                acc = ""
+                for j in range(i, len(words)):
+                    acc += words[j]
+                    if want and acc == want:
+                        return span(i, j)
+                    if not want.startswith(acc):
+                        break
+        # unquoted: the longest run of this element's words that appears as words in the target
+        tgt = " " + " ".join(norm(t) for t in re.split(r"\s+", target) if norm(t)) + " "
+        best = None
+        for i in range(len(words)):
+            for j in range(i, len(words)):
+                phrase = " ".join(words[i:j + 1])
+                if len(phrase) < 3 or f" {phrase} " not in tgt:
+                    break
+                if j - i + 1 < len(words) and (best is None or len(phrase) > best[0]):
+                    best = (len(phrase), i, j)
+        return span(best[1], best[2]) if best else self.center
 
     def describe(self, width: int, height: int) -> str:
         """One line the decision model reads: kind, text, label, where it is."""
@@ -88,7 +103,8 @@ class Element:
 
     def to_json(self) -> dict[str, Any]:
         return {"id": self.id, "cls": self.cls, "box": [round(v, 1) for v in self.box], "text": self.text,
-                "label": self.label, "score": round(self.score, 3), "source": self.source}
+                "label": self.label, "score": round(self.score, 3), "source": self.source,
+                **({"parts": [[w, [round(v, 1) for v in b]] for w, b in self.parts]} if self.parts else {})}
 
 
 @dataclass

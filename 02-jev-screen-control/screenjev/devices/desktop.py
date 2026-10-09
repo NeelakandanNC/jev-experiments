@@ -29,8 +29,19 @@ class DesktopDevice(Device):
         shot = await asyncio.to_thread(self.sct.grab, self.monitor)
         return Image.frombytes("RGB", shot.size, shot.bgra, "raw", "BGRX")
 
-    async def click(self, x, y):
-        await asyncio.to_thread(self.pg.click, *self._pt(x, y))
+    async def click(self, x, y, modifiers: str = ""):
+        mods = [m.strip().lower() for m in modifiers.replace("-", "+").split("+") if m.strip()]
+        mods = ["command" if m in ("cmd", "meta") else m for m in mods]
+
+        def _click():
+            for m in mods:
+                self.pg.keyDown(m)
+            try:
+                self.pg.click(*self._pt(x, y))
+            finally:
+                for m in reversed(mods):
+                    self.pg.keyUp(m)
+        await asyncio.to_thread(_click)
 
     async def double_click(self, x, y):
         await asyncio.to_thread(self.pg.doubleClick, *self._pt(x, y))

@@ -114,3 +114,13 @@ def test_point_for_clicks_the_quoted_word_in_a_text_run():
     assert el.point_for('the link "Enim risus"')[0] == pytest.approx((130 + 230) / 2)
     assert el.point_for("no quotes here") == el.center
     assert el.point_for("the “Lobortis” link")[0] == pytest.approx(40)  # curly quotes, as GPT writes them
+
+
+def test_point_for_unquoted_option_name_in_a_list_box():
+    words = split_words("Mayotte", (0, 0, 70, 10), 0, 0.9) + split_words("Joann", (0, 20, 50, 30), 1, 0.9) \
+        + split_words("Somalia", (0, 40, 70, 50), 2, 0.9)
+    box = Element("", "text_input", (0, 0, 100, 50), parts=[(w.text, w.box) for w in words])
+    assert box.point_for("Joann, the second option in the scroll list") == pytest.approx((25, 25))
+    assert box.point_for("the scroll list") == box.center  # names none of its words
+    single = Element("", "button", (0, 0, 60, 20), parts=[("Submit", (5, 5, 55, 15))])
+    assert single.point_for("Submit button") == single.center

@@ -15,7 +15,8 @@ class Device(ABC):
     async def screenshot(self) -> Image.Image: ...
 
     @abstractmethod
-    async def click(self, x: float, y: float) -> None: ...
+    async def click(self, x: float, y: float, modifiers: str = "") -> None:
+        """modifiers: "", "ctrl", "shift", "alt", "ctrl+shift", ..."""
 
     async def double_click(self, x: float, y: float) -> None:
         await self.click(x, y)

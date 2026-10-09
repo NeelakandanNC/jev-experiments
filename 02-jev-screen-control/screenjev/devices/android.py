@@ -31,7 +31,7 @@ class AndroidDevice(Device):
     async def screenshot(self) -> Image.Image:
         return Image.open(io.BytesIO(await self._adb("exec-out", "screencap", "-p"))).convert("RGB")
 
-    async def click(self, x, y):
+    async def click(self, x, y, modifiers: str = ""):  # no modifier keys on touch screens
         await self._adb("shell", "input", "tap", str(int(x)), str(int(y)))
 
     async def type_text(self, text):

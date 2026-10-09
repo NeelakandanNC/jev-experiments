@@ -34,7 +34,7 @@ from screenjev.llm import DEFAULT_PLANNER, LLM, image_part
 from screenjev.planner import Step
 from screenjev.selector import make_selector
 
-from .common import ece, git_rev, load_env, parse_variant, read_jsonl, run_dir
+from .common import RESULTS, ece, git_rev, load_env, parse_variant, read_jsonl, run_dir
 
 DATASET = "HongxinLi/ScreenSpot_v2"
 DOMAIN = {"windows": "desktop", "macos": "desktop", "ios": "mobile", "android": "mobile", "tool": "web",
@@ -196,6 +196,49 @@ async def run(a) -> None:
     print(json.dumps(summary["overall"], indent=1))
 
 
+async def rescore(run: str) -> None:
+    """Recompute click points and hits with the current click logic (Element.point_for), keeping every
+    model answer: YOLO + OCR are deterministic, so re-detecting the screenshot gives back the elements the
+    picker chose from (checked box by box). No API calls."""
+    out = RESULTS / "screenspot" / run
+    path = out / "cases.jsonl"
+    rows = read_jsonl(path)
+    todo = defaultdict(list)
+    for r in rows:
+        det, _ = parse_variant(r["variant"])
+        if det != "none" and r.get("pred_element"):
+            todo[r["idx"]].append((det, r))
+    perceptions = {d: Perception(make_detector(d)) for d in {d for v in todo.values() for d, _ in v}}
+    changed = mismatched = n = 0
+    for sample, img in load_samples(None, None):
+        if sample["idx"] not in todo:
+            continue
+        screens = {}
+        for det, r in todo[sample["idx"]]:
+            if det not in screens:
+                screens[det] = await perceptions[det].screen(img)
+            el = screens[det].by_id(r["pred_element"]["id"])
+            if el is None or max(abs(a - b) for a, b in zip(el.box, r["pred_element"]["box"])) > 2:
+                r["rescore"] = "element mismatch: kept the original click"
+                mismatched += 1
+                continue
+            target = (r.get("description") or {}).get("target") or ""
+            pt = el.point_for(f"{r['instruction']} {target}".strip())
+            hit = inside(pt, r["gt"])
+            changed += hit != r["hit"]
+            r.update(pred=pt, hit=hit, pred_element=el.to_json(), rescore="ok")
+        n += 1
+        if n % 100 == 0:
+            print(f"  rescored {n} screenshots", flush=True)
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text("".join(json.dumps(r) + "\n" for r in rows))
+    tmp.replace(path)
+    summary = summarize(rows)
+    (out / "summary.json").write_text(json.dumps(summary, indent=1))
+    print(f"{changed} hits changed, {mismatched} picks could not be matched (kept as they were)")
+    print(json.dumps(summary["overall"], indent=1))
+
+
 def summarize(rows: list[dict]) -> dict:
     by_v: dict[str, list[dict]] = defaultdict(list)
     for r in rows:
@@ -246,7 +289,9 @@ def main():
     ap.add_argument("--concurrency", type=int, default=8)
     ap.add_argument("--allow-none", action="store_true", help="let pickers answer 'none' (the target is always on screen here)")
     ap.add_argument("--run", help="results/screenspot/<run> (resumes if it exists)")
-    asyncio.run(run(ap.parse_args()))
+    ap.add_argument("--rescore", metavar="RUN", help="recompute clicks/hits of a finished run offline (no API calls)")
+    a = ap.parse_args()
+    asyncio.run(rescore(a.rescore) if a.rescore else run(a))
 
 
 if __name__ == "__main__":

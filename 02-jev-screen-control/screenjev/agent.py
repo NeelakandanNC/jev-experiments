@@ -128,8 +128,8 @@ class Agent:
             x, y = el.point_for(step.target)
             what = f"{el.describe(screen.width, screen.height)} [{el.id}" + (f", p={sel.confidence:.2f}]" if sel.confidence is not None else "]")
             if a == "click":
-                await d.click(x, y)
-                return f"clicked {what}", True
+                await d.click(x, y, step.modifiers)
+                return f"{step.modifiers + '+' if step.modifiers else ''}clicked {what}", True
             if a == "double_click":
                 await d.double_click(x, y)
                 return f"double-clicked {what}", True
