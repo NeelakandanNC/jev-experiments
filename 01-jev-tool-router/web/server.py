@@ -33,14 +33,15 @@ STATIC = Path(__file__).resolve().parent / "static"
 ENV_FILE = ROOT / ".env"
 RESULTS = ROOT / "results" / "routing"
 
+# ks: shortlist sizes evaluated and shown (k=1 is always run too, for the calibration numbers).
+# MCP-Bench tasks need ~9 tools each, so a 5-tool shortlist can't cover them: top-10 only there.
 BENCHMARKS = {
-    "atlas": {"name": "MCP-Atlas", "by": "Scale AI"},
-    "mcpbench": {"name": "MCP-Bench", "by": "Accenture"},
-    "universe": {"name": "MCP-Universe", "by": "Salesforce"},
+    "atlas": {"name": "MCP-Atlas", "by": "Scale AI", "ks": [5, 10]},
+    "mcpbench": {"name": "MCP-Bench", "by": "Accenture", "ks": [10]},
+    "universe": {"name": "MCP-Universe", "by": "Salesforce", "ks": [5, 10]},
 }
 OPENAI_DECISIONS = os.getenv("JEVROUTE_OPENAI_DECISION_MODEL", "openai/gpt-6-luna")
 MODELS = {"jev": "typesafe-ai/jev", f"decision:{OPENAI_DECISIONS}": OPENAI_DECISIONS}  # router spec -> model
-KS = "1,5,10"  # top-5 / top-10 are the variations; k=1 feeds the calibration numbers
 KEYS = {"openai": "OPENAI_API_KEY", "gateway": "AI_GATEWAY_API_KEY"}
 
 app = FastAPI(title="jevroute")
@@ -118,15 +119,18 @@ def run(bench: str):
         raise HTTPException(400, "tool catalog not built yet")
     if bench in procs and procs[bench][0].poll() is None:
         raise HTTPException(409, "already running")
-    routers = [spec for spec, model in MODELS.items() if has_key(model) or os.environ.get("JEVROUTE_MOCK")]
-    if not routers:
+    ready = [spec for spec, model in MODELS.items() if has_key(model) or os.environ.get("JEVROUTE_MOCK")]
+    if not ready:
         raise HTTPException(400, "add a key first")
+    done = set(((_merged(bench) or {}).get("routers") or {}))
+    # models that have no result yet; once every ready model has one, Run re-runs them all
+    routers = [spec for spec in ready if MODELS[spec].split("/")[-1] not in done] or ready
     run_id = time.strftime(f"{bench}-%Y%m%d-%H%M%S")
     logs = ROOT / "results" / "jobs"
     logs.mkdir(parents=True, exist_ok=True)
     log = logs / f"{run_id}.log"
     cmd = [sys.executable, "-m", "bench.routing", "--benchmark", bench, "--routers", ",".join(routers),
-           "--ks", KS, "--run-id", run_id]
+           "--ks", ",".join(map(str, [1, *BENCHMARKS[bench]["ks"]])), "--run-id", run_id]
     p = subprocess.Popen(cmd, cwd=ROOT, env={**os.environ, "PYTHONUNBUFFERED": "1"},
                          stdout=log.open("w"), stderr=subprocess.STDOUT)
     procs[bench] = (p, str(log), run_id)

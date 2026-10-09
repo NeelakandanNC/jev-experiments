@@ -15,7 +15,7 @@ Both decision models are called the same way, through the OpenAI-compatible **De
 | **Jev** (`typesafe-ai/jev`, trained with RLCD) | ✓ | ✓ |
 | **OpenAI decisions** (`openai/gpt-6-luna`) | ✓ | ✓ |
 
-That's 4 variations × 3 benchmarks.
+That's 4 variations × 3 benchmarks, except MCP-Bench, which is scored at top-10 only. Its tasks need ~9 tools each, so a 5-tool shortlist can't cover them even when it's perfect.
 
 ## Results
 

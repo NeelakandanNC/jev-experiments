@@ -85,8 +85,8 @@ async function run(b) {
   try { await api('/api/run/' + b, {}); refresh(); } catch (e) { alert(e.message); }
 }
 
-function result(r) {
-  const rs = r.routers || {}, ks = (r.ks || []).filter(k => k > 1);
+function result(r, ks) {
+  const rs = r.routers || {};
   const mode = (Object.values(rs)[0] || {}).mode || 'step';
   const [m, label, explain] = METRIC[mode];
   const mock = Object.values(rs).some(v => v.mock);
@@ -118,7 +118,7 @@ async function refresh() {
       <div><button ${!keySet || !c || x.running ? 'disabled' : ''} onclick="run('${b}')">${x.running ? 'Running…' : x.result ? 'Run again' : 'Run'}</button></div>
       ${x.running ? `<div><div class="bar"><i style="width:${(frac * 100).toFixed(1)}%"></i></div><div class="meta">${p ? `${p.done} / ${p.total}` : 'starting…'}</div></div>` : ''}
       ${x.error ? `<div class="err">${esc(x.error)}</div>` : ''}
-      ${x.result ? result(x.result) : ''}
+      ${x.result ? result(x.result, x.ks) : ''}
     </div>`;
   }).join('');
 }
