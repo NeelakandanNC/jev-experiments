@@ -1,0 +1,104 @@
+{
+ "run_id": "mcpbench-20261009-083459",
+ "benchmark": "mcpbench",
+ "routers": {
+  "jev": {
+   "cases": 103,
+   "errors": 0,
+   "hit@1": 0.8543689320388349,
+   "recall@1": 0.1957258471220418,
+   "tokens@1": 238.48543689320388,
+   "hit@10": 1.0,
+   "recall@10": 0.7450203387626363,
+   "tokens@10": 1944.4563106796118,
+   "mrr": 0.9231391585760518,
+   "full_catalog_tokens": 50256.0,
+   "latency_p50_ms": 1198.3761240262538,
+   "latency_p95_ms": 1866.7841005662915,
+   "cost_per_call_usd": 0.0001895280582524272,
+   "router_tokens_mean": 4512.57281553398,
+   "adaptive_size_mean": 3.029126213592233,
+   "adaptive_hit": 1.0,
+   "adaptive_tokens": 752.3398058252427,
+   "ece": 0.22980582524271845,
+   "reliability": [
+    {
+     "bin": "0.1-0.2",
+     "n": 2,
+     "confidence": 0.195,
+     "accuracy": 1.0
+    },
+    {
+     "bin": "0.2-0.3",
+     "n": 7,
+     "confidence": 0.2742857142857143,
+     "accuracy": 0.8571428571428571
+    },
+    {
+     "bin": "0.3-0.4",
+     "n": 17,
+     "confidence": 0.36529411764705877,
+     "accuracy": 0.7647058823529411
+    },
+    {
+     "bin": "0.4-0.5",
+     "n": 13,
+     "confidence": 0.4592307692307692,
+     "accuracy": 0.9230769230769231
+    },
+    {
+     "bin": "0.5-0.6",
+     "n": 10,
+     "confidence": 0.55,
+     "accuracy": 0.7
+    },
+    {
+     "bin": "0.6-0.7",
+     "n": 14,
+     "confidence": 0.6542857142857142,
+     "accuracy": 0.7857142857142857
+    },
+    {
+     "bin": "0.7-0.8",
+     "n": 12,
+     "confidence": 0.7675000000000001,
+     "accuracy": 0.8333333333333334
+    },
+    {
+     "bin": "0.8-0.9",
+     "n": 11,
+     "confidence": 0.8554545454545455,
+     "accuracy": 0.9090909090909091
+    },
+    {
+     "bin": "0.9-1.0",
+     "n": 17,
+     "confidence": 0.9741176470588234,
+     "accuracy": 1.0
+    }
+   ],
+   "top1_accuracy": 0.8543689320388349,
+   "mean_confidence": 0.6245631067961166,
+   "mode": "task",
+   "mock": false
+  }
+ },
+ "ks": [
+  1,
+  10
+ ],
+ "adaptive": 0.9,
+ "limit_tasks": null,
+ "seed": 0,
+ "catalog_tools": 257,
+ "catalog_servers": 28,
+ "catalog_tokens": 50256,
+ "skipped_no_gold": 1,
+ "tasks": 103,
+ "cases": 103,
+ "started": 1791515119.5335832,
+ "routes": {
+  "jev": "https://openrouter.ai/api/alpha/decisions"
+ },
+ "finished": 1791515136.894316
+}

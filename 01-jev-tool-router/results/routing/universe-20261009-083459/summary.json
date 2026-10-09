@@ -1,0 +1,99 @@
+{
+ "run_id": "universe-20261009-083459",
+ "benchmark": "universe",
+ "routers": {
+  "jev": {
+   "cases": 199,
+   "errors": 0,
+   "hit@1": 0.9246231155778895,
+   "recall@1": 0.5938023450586264,
+   "tokens@1": 141.2462311557789,
+   "hit@5": 1.0,
+   "recall@5": 0.7814070351758794,
+   "tokens@5": 743.9396984924623,
+   "hit@10": 1.0,
+   "recall@10": 0.7864321608040201,
+   "tokens@10": 1734.427135678392,
+   "mrr": 0.9593802345058627,
+   "full_catalog_tokens": 26465.0,
+   "latency_p50_ms": 606.7113329772837,
+   "latency_p95_ms": 1072.2331297758499,
+   "cost_per_call_usd": 0.00017956414070351758,
+   "router_tokens_mean": 4275.336683417086,
+   "ece": 0.09889447236180901,
+   "reliability": [
+    {
+     "bin": "0.2-0.3",
+     "n": 1,
+     "confidence": 0.29,
+     "accuracy": 1.0
+    },
+    {
+     "bin": "0.3-0.4",
+     "n": 3,
+     "confidence": 0.36000000000000004,
+     "accuracy": 0.3333333333333333
+    },
+    {
+     "bin": "0.4-0.5",
+     "n": 14,
+     "confidence": 0.46571428571428575,
+     "accuracy": 0.7142857142857143
+    },
+    {
+     "bin": "0.5-0.6",
+     "n": 17,
+     "confidence": 0.5623529411764706,
+     "accuracy": 0.8823529411764706
+    },
+    {
+     "bin": "0.6-0.7",
+     "n": 17,
+     "confidence": 0.6529411764705882,
+     "accuracy": 0.8823529411764706
+    },
+    {
+     "bin": "0.7-0.8",
+     "n": 18,
+     "confidence": 0.7661111111111111,
+     "accuracy": 1.0
+    },
+    {
+     "bin": "0.8-0.9",
+     "n": 29,
+     "confidence": 0.8524137931034481,
+     "accuracy": 0.8620689655172413
+    },
+    {
+     "bin": "0.9-1.0",
+     "n": 100,
+     "confidence": 0.9742000000000001,
+     "accuracy": 0.99
+    }
+   ],
+   "top1_accuracy": 0.9246231155778895,
+   "mean_confidence": 0.826532663316583,
+   "mode": "server",
+   "mock": false
+  }
+ },
+ "ks": [
+  1,
+  5,
+  10
+ ],
+ "adaptive": 0.9,
+ "limit_tasks": null,
+ "seed": 0,
+ "catalog_tools": 88,
+ "catalog_servers": 10,
+ "catalog_tokens": 26465,
+ "skipped_server_not_in_catalog": 33,
+ "tasks": 199,
+ "cases": 199,
+ "started": 1791515101.012747,
+ "routes": {
+  "jev": "https://openrouter.ai/api/alpha/decisions"
+ },
+ "finished": 1791515117.968868
+}

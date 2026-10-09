@@ -101,6 +101,8 @@ async def main_async(args) -> Path:
           f"{len(catalog.servers)} servers / {catalog.tokens():,} tokens", flush=True)
 
     routers = [make_router(s) for s in specs]
+    config["routes"] = {r.name: getattr(getattr(r, "client", None), "via", None) or "local" for r in routers}
+    (out / "config.json").write_text(json.dumps(config, indent=1))
     total = len(cases) * len(routers)
     done = 0
     sem = asyncio.Semaphore(args.concurrency)

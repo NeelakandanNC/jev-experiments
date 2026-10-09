@@ -1,0 +1,25 @@
+{
+ "run_id": "universe-20261009-083459",
+ "benchmark": "universe",
+ "routers": [
+  "jev"
+ ],
+ "ks": [
+  1,
+  5,
+  10
+ ],
+ "adaptive": 0.9,
+ "limit_tasks": null,
+ "seed": 0,
+ "catalog_tools": 88,
+ "catalog_servers": 10,
+ "catalog_tokens": 26465,
+ "skipped_server_not_in_catalog": 33,
+ "tasks": 199,
+ "cases": 199,
+ "started": 1791515101.012747,
+ "routes": {
+  "jev": "https://openrouter.ai/api/alpha/decisions"
+ }
+}

@@ -1,0 +1,24 @@
+{
+ "run_id": "mcpbench-20261009-083459",
+ "benchmark": "mcpbench",
+ "routers": [
+  "jev"
+ ],
+ "ks": [
+  1,
+  10
+ ],
+ "adaptive": 0.9,
+ "limit_tasks": null,
+ "seed": 0,
+ "catalog_tools": 257,
+ "catalog_servers": 28,
+ "catalog_tokens": 50256,
+ "skipped_no_gold": 1,
+ "tasks": 103,
+ "cases": 103,
+ "started": 1791515119.5335832,
+ "routes": {
+  "jev": "https://openrouter.ai/api/alpha/decisions"
+ }
+}

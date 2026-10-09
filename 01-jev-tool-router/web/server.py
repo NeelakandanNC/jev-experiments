@@ -42,7 +42,7 @@ BENCHMARKS = {
 }
 OPENAI_DECISIONS = os.getenv("JEVROUTE_OPENAI_DECISION_MODEL", "openai/gpt-6-luna")
 MODELS = {"jev": "typesafe-ai/jev", f"decision:{OPENAI_DECISIONS}": OPENAI_DECISIONS}  # router spec -> model
-KEYS = {"openai": "OPENAI_API_KEY", "gateway": "AI_GATEWAY_API_KEY"}
+KEYS = {"openai": "OPENAI_API_KEY", "gateway": "AI_GATEWAY_API_KEY", "openrouter": "OPENROUTER_API_KEY"}
 
 app = FastAPI(title="jevroute")
 procs: dict[str, tuple[subprocess.Popen, str, str]] = {}
@@ -56,9 +56,11 @@ def _merged(bench: str) -> dict | None:
     merged: dict = {}
     for p in sorted(RESULTS.glob(f"{bench}-*/summary.json"), key=lambda p: p.stat().st_mtime):
         s = json.loads(p.read_text())
+        routes = json.loads((p.parent / "config.json").read_text()).get("routes", {})
         for name, v in s.get("routers", {}).items():
-            if v.get("cases") and v.get("errors", 0) < v["cases"]:
-                merged.setdefault("routers", {})[name] = {**v, "run_id": s["run_id"]}
+            if v.get("cases") and not v.get("errors"):  # complete runs only, so models compare on the same cases
+                via = routes.get(name) or ("https://api.openai.com/v1" if "luna" in name else "")
+                merged.setdefault("routers", {})[name] = {**v, "run_id": s["run_id"], "via": via}
                 merged.update({k: s[k] for k in ("ks", "catalog_tokens", "cases", "tasks", "catalog_tools")})
     return merged or None
 
@@ -86,7 +88,9 @@ def state():
             info["error"] = Path(p[1]).read_text(errors="replace")[-600:]
         info["result"] = _merged(b)
         out[b] = info
-    return {"keys": {k: bool(os.environ.get(v)) for k, v in KEYS.items()},
+    keys = {k: bool(os.environ.get(v)) for k, v in KEYS.items()}
+    keys["jev"] = has_key(MODELS["jev"])
+    return {"keys": keys,
             "models_ready": [spec for spec, model in MODELS.items() if has_key(model)],
             "mock": os.environ.get("JEVROUTE_MOCK", "") in ("1", "true"), "benchmarks": out}
 

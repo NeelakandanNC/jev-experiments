@@ -5,7 +5,9 @@
 
 Any decision model on the gateway works (typesafe-ai/jev, openai/gpt-6-luna, ...). OpenAI models
 ("openai/<model>") go straight to api.openai.com instead when OPENAI_API_KEY is set: same
-Decisions API, same request and response shapes.
+Decisions API, same request and response shapes. Jev ("typesafe-ai/jev") can instead go through
+OpenRouter's Decisions API (POST /api/alpha/decisions, TypeSafe's native request shape) when
+JEVROUTE_JEV_VIA=openrouter; requests are translated so callers always use the OpenAI shape.
 Set JEVROUTE_MOCK=1 to answer locally with a lexical heuristic: for plumbing tests only,
 results produced that way are tagged mock and must never be reported.
 """
@@ -32,10 +34,16 @@ MAX_CHOICES = 255
 INPUT_PRICE_PER_MTOK = {"gpt-6-luna": 0.10}
 
 
+OPENROUTER_DECISIONS_URL = "https://openrouter.ai/api/alpha/decisions"
+OPENROUTER_JEV = "typesafe/jev-1.13"
+
+
 def backend(model: str) -> tuple[str, str, str]:
     """(base_url, api key env var, model name to send) for a decision model slug."""
     if model.startswith("openai/") and os.getenv("OPENAI_API_KEY") and not os.getenv("JEVROUTE_FORCE_GATEWAY"):
         return OPENAI_BASE_URL, "OPENAI_API_KEY", model.split("/", 1)[1]
+    if model == "typesafe-ai/jev" and os.getenv("JEVROUTE_JEV_VIA") == "openrouter":
+        return OPENROUTER_DECISIONS_URL, "OPENROUTER_API_KEY", OPENROUTER_JEV
     allow = [m for m in os.getenv("JEVROUTE_GATEWAY_ALLOW", "").split(",") if m]
     if allow and model not in allow:  # e.g. a key the owner scoped to one model
         raise DecisionError(f"{model} is not in JEVROUTE_GATEWAY_ALLOW ({', '.join(allow)}); refusing to use the gateway key")
@@ -128,13 +136,19 @@ class DecisionClient:
         self.mock = is_mock()
         self._client = None
         self.limiter = None
+        self.via = "mock" if self.mock else None
         if not self.mock:
             url, key_var, self.wire_model = backend(model)
+            self.via = url
             self.limiter = _limiter(url)
             key = api_key or os.getenv(key_var)
             if not key:
                 raise DecisionError(f"{key_var} is not set (needed for {model}; JEVROUTE_MOCK=1 for a dry run)")
-            self._client = AsyncOpenAI(api_key=key, base_url=base_url or url, timeout=timeout, max_retries=max_retries)
+            if url == OPENROUTER_DECISIONS_URL:
+                self._client = _NativeClient(url, key, timeout, max_retries)
+            else:
+                self._client = AsyncOpenAI(api_key=key, base_url=base_url or url, timeout=timeout,
+                                           max_retries=max_retries)
 
     async def decide(self, input: str, questions: list[dict[str, Any]]) -> Decision:
         for q in questions:
@@ -146,10 +160,13 @@ class DecisionClient:
         if self.limiter:
             await self.limiter.acquire(estimate_tokens(input, questions))
         t0 = time.perf_counter()
-        resp = await self._client.decisions.with_raw_response.create(model=self.wire_model, input=input,
-                                                                    questions=questions)
+        if isinstance(self._client, _NativeClient):
+            body = await self._client.decide(self.wire_model, input, questions)
+        else:
+            resp = await self._client.decisions.with_raw_response.create(model=self.wire_model, input=input,
+                                                                        questions=questions)
+            body = resp.http_response.json()
         latency = time.perf_counter() - t0
-        body = resp.http_response.json()
         if "error" in body:
             raise DecisionError(body["error"].get("message", str(body["error"])))
         d = _parse(body, latency)
@@ -160,6 +177,79 @@ class DecisionClient:
     async def aclose(self) -> None:
         if self._client:
             await self._client.close()
+
+
+class _NativeClient:
+    """TypeSafe-native Decisions endpoint (OpenRouter /api/alpha/decisions), spoken in the OpenAI shape.
+
+    OpenAI shape            native shape
+    input                   state
+    [{name, type, ...}]     {name: {type, instructions, criteria}}
+    predicate               noul                (answer: noul -> probability)
+    choices [{value, d}]    criteria {value: d} (answer probabilities: {value: p})
+    levels [{label}]        criteria [label]
+    """
+
+    RETRY = {408, 409, 429, 500, 502, 503, 504}
+
+    def __init__(self, url: str, key: str, timeout: float, max_retries: int):
+        import httpx
+        self.url = url
+        self.max_retries = max_retries
+        self.http = httpx.AsyncClient(timeout=timeout, headers={"Authorization": f"Bearer {key}"})
+
+    @staticmethod
+    def to_native(questions: list[dict[str, Any]]) -> dict[str, Any]:
+        out = {}
+        for i, q in enumerate(questions):
+            name = q.get("name") or f"q{i}"
+            if q["type"] == "choice":
+                out[name] = {"type": "choice", "instructions": q["instructions"],
+                             "criteria": {c["value"]: c.get("description") or c["value"] for c in q["choices"]}}
+            elif q["type"] == "predicate":
+                out[name] = {"type": "noul", "instructions": q["instructions"]}
+            elif q["type"] == "score":
+                out[name] = {"type": "score", "instructions": q["instructions"],
+                             "criteria": [l["label"] for l in q["levels"]]}
+            else:
+                raise DecisionError(f"unsupported question type {q['type']!r}")
+        return out
+
+    @staticmethod
+    def from_native(body: dict[str, Any], questions: list[dict[str, Any]]) -> dict[str, Any]:
+        answers = []
+        for i, q in enumerate(questions):
+            name = q.get("name") or f"q{i}"
+            a = (body.get("answers") or {}).get(name) or {"type": "refusal"}
+            if a["type"] == "noul":
+                answers.append({"type": "predicate", "name": name, "probability": a.get("noul")})
+            elif a["type"] in ("choice", "score"):
+                probs = [{"value": k, "probability": v} for k, v in (a.get("probabilities") or {}).items()]
+                answers.append({"type": a["type"], "name": name, "choice": a.get("choice"), "score": a.get("score"),
+                                "confidence": a.get("confidence"), "probabilities": probs})
+            else:
+                answers.append({"type": "refusal", "name": name})
+        usage = body.get("usage") or {}
+        return {"model": body.get("model"), "answers": answers, "usage": usage, "provider": body.get("provider"),
+                "provider_metadata": {"gateway": {"cost": usage.get("cost")}}}
+
+    async def decide(self, model: str, input: str, questions: list[dict[str, Any]]) -> dict[str, Any]:
+        payload = {"model": model, "state": input, "questions": self.to_native(questions)}
+        for attempt in range(self.max_retries + 1):
+            r = await self.http.post(self.url, json=payload)
+            if r.status_code in self.RETRY and attempt < self.max_retries:
+                wait = float(r.headers.get("retry-after") or 0) or min(2 ** attempt, 30)
+                await asyncio.sleep(wait)
+                continue
+            body = r.json()
+            if r.status_code >= 400 or "error" in body:
+                err = body.get("error", body)
+                raise DecisionError(f"HTTP {r.status_code}: {err.get('message', err) if isinstance(err, dict) else err}")
+            return self.from_native(body, questions)
+        raise DecisionError("unreachable")
+
+    async def close(self):
+        await self.http.aclose()
 
 
 def _parse(body: dict[str, Any], latency: float) -> Decision:

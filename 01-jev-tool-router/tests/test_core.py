@@ -180,3 +180,25 @@ async def test_server_mode_scores_servers_covered_by_top_k_tools():
 def test_decision_spec_without_strategy_keeps_full_slug():
     r = make_router("decision:openai/gpt-6-luna")
     assert r.model == "openai/gpt-6-luna" and r.strategy == "auto"
+
+
+def test_native_adapter_roundtrip():
+    from jevroute.decide import _NativeClient
+
+    qs = [{"type": "choice", "name": "tool", "instructions": "next?",
+           "choices": [{"value": "a", "description": "tool a"}, {"value": "b"}]},
+          {"type": "predicate", "name": "s0", "instructions": "need server?"},
+          {"type": "score", "name": "u", "instructions": "urgency", "levels": [{"label": "low"}, {"label": "high"}]}]
+    native = _NativeClient.to_native(qs)
+    assert native["tool"]["criteria"] == {"a": "tool a", "b": "b"}
+    assert native["s0"] == {"type": "noul", "instructions": "need server?"}
+    assert native["u"]["criteria"] == ["low", "high"]
+    body = {"model": "typesafe/jev-1.13-20260917", "provider": "TypeSafe",
+            "answers": {"tool": {"type": "choice", "choice": "b", "confidence": 0.7, "probabilities": {"a": 0.2, "b": 0.8}},
+                        "s0": {"type": "noul", "noul": 0.9}},
+            "usage": {"input_tokens": 100, "output_tokens": 5, "cost": 4.2e-6}}
+    d = _parse(_NativeClient.from_native(body, qs), 0.1)
+    assert d.answers["tool"].ranked()[0] == ("b", 0.8)
+    assert d.answers["s0"].probability == 0.9
+    assert d.answers["u"].type == "refusal"
+    assert d.cost_usd == pytest.approx(4.2e-6) and d.input_tokens == 100
