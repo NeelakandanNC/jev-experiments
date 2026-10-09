@@ -36,11 +36,17 @@ def backend(model: str) -> tuple[str, str, str]:
     """(base_url, api key env var, model name to send) for a decision model slug."""
     if model.startswith("openai/") and os.getenv("OPENAI_API_KEY") and not os.getenv("JEVROUTE_FORCE_GATEWAY"):
         return OPENAI_BASE_URL, "OPENAI_API_KEY", model.split("/", 1)[1]
+    allow = [m for m in os.getenv("JEVROUTE_GATEWAY_ALLOW", "").split(",") if m]
+    if allow and model not in allow:  # e.g. a key the owner scoped to one model
+        raise DecisionError(f"{model} is not in JEVROUTE_GATEWAY_ALLOW ({', '.join(allow)}); refusing to use the gateway key")
     return GATEWAY_BASE_URL, "AI_GATEWAY_API_KEY", model
 
 
 def has_key(model: str) -> bool:
-    return bool(os.getenv(backend(model)[1]))
+    try:
+        return bool(os.getenv(backend(model)[1]))
+    except DecisionError:
+        return False
 
 
 class TokenRateLimiter:
