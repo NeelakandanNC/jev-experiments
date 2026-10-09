@@ -18,7 +18,43 @@ An agent that controls any screen (browser, desktop or Android phone) from pixel
 
 Compared against the same pipeline with **OpenAI's decision model** (`gpt-6-luna` on OpenAI's Decisions API), against the **chat LLM picking the element itself** (from the same list, or Set-of-Mark style on numbered boxes), and against the **LLM clicking raw coordinates** with no detector.
 
-<!-- RESULTS -->
+## Results
+
+### Detector: done (trained here, on CPU)
+
+YOLO11n, fine-tuned from COCO on 4,156 auto-labelled screenshots for 23 epochs: 15, then 8 more after fixing a labelling gap. That took 4.6 h on 4 CPU cores. The weights are `models/screenjev-yolo.pt` (5 MB); metrics are in `models/screenjev-yolo.json`.
+
+| Split | Images | mAP50 | mAP50-95 | Precision | Recall |
+|---|---|---|---|---|---|
+| Val: synthetic pages + MiniWoB training tasks (640 px) | 368 | **94.2%** | 77.7% | 91.9% | 89.3% |
+| Val at 960 px | 368 | **95.4%** | 79.7% | 94.0% | 91.4% |
+| **Held-out MiniWoB eval tasks** (25 tasks the detector never saw, 640 px) | 146 | **71.5%** | 52.3% | 90.5% | 60.3% |
+
+![Detector training](results/report/detector_training.png)
+
+Per class (val, mAP50-95): button 90%, text_input 90%, tab 87%, back 86%, toggle 85%, dropdown 84%, icon 79%, slider 76%, menu 75%, scrollbar 73%, search 72%, link 71%, checkbox 70%, close 69%, radio 61%.
+
+On held-out MiniWoB tasks, YOLO + OCR elements (red = detected widget, green = OCR text run):
+
+![Perception on held-out MiniWoB tasks](results/report/perception_miniwob.png)
+
+What it gets right, and where it falls short:
+- **Fields, buttons, checkboxes, tabs:** found on unseen task layouts, with labels attached ("text input labeled Username", "checkbox labeled CXjt"). This takes ~0.35 s per screenshot on CPU (YOLO + OCR).
+- **Held-out vs val:** the gap (72% vs 94% mAP50) is mostly MiniWoB's own widget styles that only occur in eval tasks. Inline `<span>` links are 33% mAP50-95. Native `<select>` reads as a text input, which still works because `select` picks options by text at that point. Tiny glyph icons that are styled only on hover (social-media's reply / retweet / more) aren't found.
+- **Inline links:** when a link isn't boxed, it is still clickable. It sits inside an OCR text run, and the agent clicks the quoted word (`the link "in."`), not the run's center.
+- **Image size:** `auto` uses 640 px for phone and MiniWoB-sized screenshots (upscaling them to 960 costs 7 points of mAP50) and 960 px for desktop-sized ones (+1.2 points mAP50 on val).
+- **Training length:** the curve is still rising at epoch 23. The GPU notebook (40 epochs at 960 px) should do better on small elements.
+
+### Jev vs gpt-6-luna: not run yet
+
+The ScreenSpot-v2 and MiniWoB++ comparisons need the OpenAI, OpenRouter and Hugging Face APIs, and the container this was built in had no access to them. Everything is wired and tested offline (`SCREENJEV_MOCK=1`). With keys in `.env`:
+
+```bash
+python -m bench.screenspot --variants yolo+jev,yolo+luna,yolo+llm,omniparser+jev,omniparser+luna,llm-coords
+python -m bench.miniwob --variants yolo+jev,yolo+luna,yolo+llm,yolo+som,dom+jev --episodes 10
+python -m bench.report      # tables + charts into results/report/
+```
+
 
 ## The detector
 

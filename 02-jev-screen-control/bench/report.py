@@ -147,7 +147,8 @@ def detector_section() -> str:
         return ""
     m = json.loads(p.read_text())
     md = ["### Detector (`models/screenjev-yolo.pt`)\n",
-          f"YOLO11n fine-tuned from COCO for {m['epochs']} epochs at {m['imgsz']} px on {m['device']} ({m['train_hours']} h). "
+          f"YOLO11n fine-tuned from COCO for {m['epochs']} epochs at {m['imgsz']} px on {m['device']} ({m['train_hours']} h"
+          + (f"; {' + '.join(str(st['epochs']) for st in m['stages'])} epochs: " + "; then ".join(st['note'] for st in m['stages']) if m.get('stages') else "") + "). "
           f"Train set: {m['dataset']['train']['images']} screenshots.\n",
           "| Eval image size | Split | mAP50 | mAP50-95 | Precision | Recall |", "|---|---|---|---|---|---|"]
     for size, res in m["metrics"].items():
@@ -162,6 +163,9 @@ def detector_section() -> str:
         for key, lab, c in (("metrics/mAP50(B)", "mAP50", "#7c3aed"), ("metrics/mAP50-95(B)", "mAP50-95", "#0ea5e9"),
                             ("metrics/recall(B)", "recall", "#f59e0b")):
             ax.plot(ep, [100 * float(r[key]) for r in rows], marker="o", ms=3, label=lab, color=c)
+        if m.get("stages") and len(m["stages"]) > 1:
+            ax.axvline(m["stages"][0]["epochs"] + 0.5, color="#999", ls="--", lw=1)
+            ax.text(m["stages"][0]["epochs"] + 0.7, 8, "relabelled MiniWoB links", fontsize=7, color="#666")
         ax.set(xlabel="epoch", ylabel="%", title="Detector training (val split, 640 px)", ylim=(0, 100))
         ax.legend(fontsize=8)
         ax.spines[["top", "right"]].set_visible(False)

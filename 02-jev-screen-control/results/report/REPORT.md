@@ -3,16 +3,16 @@
 
 ### Detector (`models/screenjev-yolo.pt`)
 
-YOLO11n fine-tuned from COCO for 15 epochs at 640 px on cpu (3.01 h). Train set: 4187 screenshots.
+YOLO11n fine-tuned from COCO for 23 epochs at 640 px on cpu (4.63 h; 15 + 8 epochs: first dataset (MiniWoB <span class=alink> links unlabelled); then relabelled MiniWoB pages (pointer-cursor elements)). Train set: 4156 screenshots.
 
 | Eval image size | Split | mAP50 | mAP50-95 | Precision | Recall |
 |---|---|---|---|---|---|
-| 640 | val | 92.5% | 75.6% | 90.0% | 86.2% |
-| 640 | miniwob_suite | 70.4% | 51.4% | 89.7% | 67.2% |
-| 960 | val | 94.3% | 78.5% | 92.3% | 90.3% |
-| 960 | miniwob_suite | 65.0% | 40.6% | 82.3% | 64.3% |
+| 640 | val | 94.2% | 77.7% | 91.9% | 89.3% |
+| 640 | miniwob_suite | 71.5% | 52.3% | 90.5% | 60.3% |
+| 960 | val | 95.4% | 79.7% | 94.0% | 91.4% |
+| 960 | miniwob_suite | 64.2% | 39.6% | 75.4% | 59.6% |
 
 ![Detector training](detector_training.png)
 
 
-Per-class mAP50-95 (val): button 88.2%, link 70.4%, text_input 89.6%, checkbox 68.9%, radio 60.0%, toggle 84.6%, dropdown 82.0%, slider 73.8%, tab 84.5%, icon 75.1%, back 81.0%, close 62.7%, menu 72.2%, search 69.2%, scrollbar 72.2%
+Per-class mAP50-95 (val): button 89.6%, link 70.6%, text_input 89.8%, checkbox 70.0%, radio 60.9%, toggle 85.0%, dropdown 84.1%, slider 76.1%, tab 86.7%, icon 78.6%, back 85.9%, close 68.5%, menu 75.0%, search 71.6%, scrollbar 73.4%
