@@ -65,7 +65,7 @@ class DecisionSelector:
         if not screen.elements:
             return Selection(None, None, model=self.model, error="no elements detected")
         choices = [{"value": e.id, "description": e.describe(screen.width, screen.height)} for e in screen.elements]
-        if allow_none:
+        if allow_none or len(choices) < 2:  # the API needs at least 2 options
             choices.append({"value": NONE, "description": NONE_DESC})
         q = [{"type": "choice", "name": "target", "instructions": INSTRUCTIONS, "choices": choices}]
         for attempt in range(2):  # an empty answer / refusal is rare; one retry

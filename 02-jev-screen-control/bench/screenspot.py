@@ -84,6 +84,11 @@ async def run(a) -> None:
            "dataset": DATASET, "git": git_rev(), "started": time.strftime("%Y-%m-%d %H:%M:%S")}
     (out / "config.json").write_text(json.dumps(cfg, indent=1))
     path = out / "cases.jsonl"
+    if a.retry_errors:  # drop rows that failed for API reasons (rate limits, credits, network); keep real answers
+        rows = read_jsonl(path)
+        keep = [r for r in rows if not _api_error(r.get("error") or "")]
+        path.write_text("".join(json.dumps(r) + "\n" for r in keep))
+        print(f"retrying {len(rows) - len(keep)} rows that hit API errors")
     done = {(r["variant"], r["idx"]) for r in read_jsonl(path)}
 
     by_det: dict[str, list[str]] = defaultdict(list)
@@ -196,6 +201,11 @@ async def run(a) -> None:
     print(json.dumps(summary["overall"], indent=1))
 
 
+def _api_error(err: str) -> bool:
+    return any(k in err for k in ("RateLimitError", "APIConnectionError", "APITimeoutError", "InternalServerError",
+                                  "Error code: 5", "BadRequestError"))
+
+
 async def rescore(run: str) -> None:
     """Recompute click points and hits with the current click logic (Element.point_for), keeping every
     model answer: YOLO + OCR are deterministic, so re-detecting the screenshot gives back the elements the
@@ -241,7 +251,11 @@ async def rescore(run: str) -> None:
 
 def summarize(rows: list[dict]) -> dict:
     by_v: dict[str, list[dict]] = defaultdict(list)
+    api_failed = defaultdict(int)
     for r in rows:
+        if _api_error(r.get("error") or ""):
+            api_failed[r["variant"]] += 1  # never answered: not counted as a miss, reported separately
+            continue
         by_v[r["variant"]].append(r)
     overall, breakdown = {}, {}
     for v, rs in sorted(by_v.items()):
@@ -254,6 +268,7 @@ def summarize(rows: list[dict]) -> dict:
             "mean_confidence": sum(c for c, _ in conf) / len(conf) if conf else None,
             "acc_at_50pct_coverage": sel.get(0.5), "acc_at_80pct_coverage": sel.get(0.8),
             "errors": sum(bool(r.get("error")) for r in rs),
+            "api_failed_excluded": api_failed.get(v, 0),
             "cost_per_1k": 1000 * sum(r.get("cost_usd") or 0 for r in rs) / len(rs),
             "describe_tokens_per_case": sum(((r.get("description") or {}).get("tokens") or 0) for r in rs) / len(rs),
             "tokens_per_case": sum(r.get("tokens") or 0 for r in rs) / len(rs),
@@ -289,6 +304,7 @@ def main():
     ap.add_argument("--concurrency", type=int, default=8)
     ap.add_argument("--allow-none", action="store_true", help="let pickers answer 'none' (the target is always on screen here)")
     ap.add_argument("--run", help="results/screenspot/<run> (resumes if it exists)")
+    ap.add_argument("--retry-errors", action="store_true", help="re-run rows that failed for API reasons")
     ap.add_argument("--rescore", metavar="RUN", help="recompute clicks/hits of a finished run offline (no API calls)")
     a = ap.parse_args()
     asyncio.run(rescore(a.rescore) if a.rescore else run(a))

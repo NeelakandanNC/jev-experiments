@@ -1,0 +1,160 @@
+{
+ "overall": {
+  "llm-coords": {
+   "n": 1272,
+   "accuracy": 0.7161949685534591,
+   "reachable": null,
+   "ece": 0.007855626326964125,
+   "mean_confidence": 0.9716135881104034,
+   "acc_at_50pct_coverage": 0.9936305732484076,
+   "acc_at_80pct_coverage": 0.9867197875166003,
+   "errors": 330,
+   "cost_per_1k": 0.0,
+   "describe_tokens_per_case": 0.0,
+   "tokens_per_case": 1221.8514150943397,
+   "latency_p50_s": 1.8227499039999202
+  },
+  "omniparser+luna": {
+   "n": 1272,
+   "accuracy": 0.5141509433962265,
+   "reachable": 0.9559748427672956,
+   "ece": 0.048881650380021714,
+   "mean_confidence": 0.7170684039087948,
+   "acc_at_50pct_coverage": 0.9260869565217391,
+   "acc_at_80pct_coverage": 0.8260869565217391,
+   "errors": 351,
+   "cost_per_1k": 0.0810874213836478,
+   "describe_tokens_per_case": 0.0,
+   "tokens_per_case": 810.874213836478,
+   "latency_p50_s": 0.34316851000039605
+  },
+  "omniparser+luna@desc": {
+   "n": 1272,
+   "accuracy": 0.5927672955974843,
+   "reachable": 0.9559748427672956,
+   "ece": 0.0384698275862069,
+   "mean_confidence": 0.8292456896551724,
+   "acc_at_50pct_coverage": 0.9568965517241379,
+   "acc_at_80pct_coverage": 0.9245283018867925,
+   "errors": 344,
+   "cost_per_1k": 0.08497295597484276,
+   "describe_tokens_per_case": 1309.2468553459119,
+   "tokens_per_case": 849.7295597484276,
+   "latency_p50_s": 0.5987139630001366
+  },
+  "yolo+llm": {
+   "n": 1272,
+   "accuracy": 0.5416666666666666,
+   "reachable": 0.8238993710691824,
+   "ece": 0.13109704641350212,
+   "mean_confidence": 0.8578902953586498,
+   "acc_at_50pct_coverage": 0.9367088607594937,
+   "acc_at_80pct_coverage": 0.8522427440633246,
+   "errors": 324,
+   "cost_per_1k": 0.0,
+   "describe_tokens_per_case": 0.0,
+   "tokens_per_case": 702.5086477987421,
+   "latency_p50_s": 1.9232337140001619
+  },
+  "yolo+llm@desc": {
+   "n": 1272,
+   "accuracy": 0.5644654088050315,
+   "reachable": 0.8238993710691824,
+   "ece": 0.09888768898488126,
+   "mean_confidence": 0.8742656587473002,
+   "acc_at_50pct_coverage": 0.9568034557235421,
+   "acc_at_80pct_coverage": 0.9,
+   "errors": 346,
+   "cost_per_1k": 0.0,
+   "describe_tokens_per_case": 1309.2468553459119,
+   "tokens_per_case": 702.6729559748428,
+   "latency_p50_s": 1.4027908099997148
+  },
+  "yolo+luna": {
+   "n": 1272,
+   "accuracy": 0.5031446540880503,
+   "reachable": 0.8238993710691824,
+   "ece": 0.06895388076490445,
+   "mean_confidence": 0.778087739032621,
+   "acc_at_50pct_coverage": 0.9256756756756757,
+   "acc_at_80pct_coverage": 0.8227848101265823,
+   "errors": 383,
+   "cost_per_1k": 0.0677495283018868,
+   "describe_tokens_per_case": 0.0,
+   "tokens_per_case": 677.4952830188679,
+   "latency_p50_s": 0.35300848999986556
+  },
+  "yolo+luna@desc": {
+   "n": 1272,
+   "accuracy": 0.5432389937106918,
+   "reachable": 0.8238993710691824,
+   "ece": 0.08969422423556069,
+   "mean_confidence": 0.8722536806342016,
+   "acc_at_50pct_coverage": 0.9433106575963719,
+   "acc_at_80pct_coverage": 0.8909348441926346,
+   "errors": 389,
+   "cost_per_1k": 0.0699125786163522,
+   "describe_tokens_per_case": 1309.2468553459119,
+   "tokens_per_case": 699.125786163522,
+   "latency_p50_s": 0.18429829200067616
+  }
+ },
+ "by_domain_type": {
+  "llm-coords": {
+   "desktop/icon": 0.9682539682539683,
+   "desktop/text": 0.9666666666666667,
+   "mobile/icon": 0.9685863874345549,
+   "mobile/text": 0.9922480620155039,
+   "web/icon": 0.29535864978902954,
+   "web/text": 0.37142857142857144
+  },
+  "omniparser+luna": {
+   "desktop/icon": 0.3968253968253968,
+   "desktop/text": 0.8555555555555555,
+   "mobile/icon": 0.4083769633507853,
+   "mobile/text": 0.8953488372093024,
+   "web/icon": 0.14767932489451477,
+   "web/text": 0.37857142857142856
+  },
+  "omniparser+luna@desc": {
+   "desktop/icon": 0.6031746031746031,
+   "desktop/text": 0.9277777777777778,
+   "mobile/icon": 0.6544502617801047,
+   "mobile/text": 0.9573643410852714,
+   "web/icon": 0.16877637130801687,
+   "web/text": 0.3535714285714286
+  },
+  "yolo+llm": {
+   "desktop/icon": 0.47619047619047616,
+   "desktop/text": 0.95,
+   "mobile/icon": 0.36649214659685864,
+   "mobile/text": 0.9457364341085271,
+   "web/icon": 0.16877637130801687,
+   "web/text": 0.37142857142857144
+  },
+  "yolo+llm@desc": {
+   "desktop/icon": 0.5317460317460317,
+   "desktop/text": 0.9444444444444444,
+   "mobile/icon": 0.4607329842931937,
+   "mobile/text": 0.9767441860465116,
+   "web/icon": 0.189873417721519,
+   "web/text": 0.34285714285714286
+  },
+  "yolo+luna": {
+   "desktop/icon": 0.3412698412698413,
+   "desktop/text": 0.9277777777777778,
+   "mobile/icon": 0.28272251308900526,
+   "mobile/text": 0.9186046511627907,
+   "web/icon": 0.1350210970464135,
+   "web/text": 0.3821428571428571
+  },
+  "yolo+luna@desc": {
+   "desktop/icon": 0.48412698412698413,
+   "desktop/text": 0.9444444444444444,
+   "mobile/icon": 0.387434554973822,
+   "mobile/text": 0.9767441860465116,
+   "web/icon": 0.14345991561181434,
+   "web/text": 0.35714285714285715
+  }
+ }
+}
