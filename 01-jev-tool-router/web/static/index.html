@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jev Tool Router</title>
+<style>
+:root { --bg: #fafaf9; --panel: #fff; --ink: #1c1917; --muted: #78716c; --line: #e7e5e4; --accent: #4f46e5; --good: #15803d; --bad: #b91c1c; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #0c0a09; --panel: #171412; --ink: #f5f5f4; --muted: #a8a29e; --line: #2c2724; --accent: #818cf8; --good: #4ade80; --bad: #f87171; }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+main { max-width: 1100px; margin: 0 auto; padding: 32px 16px 64px; }
+h1 { font-size: 22px; margin: 0 0 4px; }
+.sub { color: var(--muted); margin: 0 0 24px; max-width: 720px; }
+.key { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; align-items: center; }
+input { flex: 1 1 280px; font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; }
+button { font: inherit; font-weight: 600; border: 0; border-radius: 8px; padding: 9px 18px; background: var(--accent); color: #fff; cursor: pointer; }
+button:disabled { opacity: .45; cursor: default; }
+.ok { color: var(--good); font-size: 14px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.card h2 { font-size: 18px; margin: 0; }
+.meta { color: var(--muted); font-size: 13px; }
+.big { font-size: 40px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; color: var(--accent); }
+.big + div { color: var(--muted); font-size: 13px; margin-top: 4px; }
+.facts div { font-size: 14px; padding: 3px 0; }
+.facts b { font-variant-numeric: tabular-nums; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+th, td { padding: 5px 4px; border-bottom: 1px solid var(--line); text-align: right; }
+th:first-child, td:first-child { text-align: left; }
+th { color: var(--muted); font-weight: 500; }
+table.grid2 td { vertical-align: top; padding: 10px 6px; }
+table.grid2 .v { font-size: 26px; font-weight: 700; color: var(--accent); letter-spacing: -0.02em; }
+table.grid2 .t { font-size: 12px; color: var(--muted); font-weight: 400; }
+.bar { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--accent); transition: width .4s; }
+.err { color: var(--bad); font-size: 12px; white-space: pre-wrap; max-height: 120px; overflow: auto; }
+.mock { background: #b45309; color: #fff; font-size: 11px; padding: 1px 6px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Jev as a tool router for MCP agents</h1>
+  <p class="sub">Instead of loading every MCP tool into the agent's context, Jev (TypeSafe's RLCD decision model, called through the OpenAI Decisions API on Vercel AI Gateway) hands the agent only the 5 or 10 tools it needs next. Each run compares Jev with OpenAI's decision model on three public MCP benchmarks.</p>
+
+  <div class="key" id="keyrow">
+    <input id="key" type="password" placeholder="Vercel AI Gateway API key" autocomplete="off">
+    <button onclick="saveKey()">Save key</button>
+  </div>
+  <div class="key" id="keyok" hidden><span class="ok">✓ AI Gateway key saved</span><span id="mockflag"></span></div>
+
+  <div class="grid" id="cards"></div>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const pct = v => v == null ? '—' : (v * 100).toFixed(1) + '%';
+const num = v => v == null ? '—' : Math.round(v).toLocaleString();
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+const LABEL = n => n === 'jev' ? 'Jev' : n.includes('luna') || n.includes('openai') ? 'OpenAI decisions' : n;
+const METRIC = {  // what "right" means for each benchmark's gold labels
+  step: ['hit', 'right tool offered', 'the tool the reference agent called next is in the shortlist'],
+  task: ['recall', 'needed tools offered', 'share of the tools the task needs that are in the shortlist'],
+  server: ['hit', 'right server offered', 'the shortlist includes a tool from a server the task needs'],
+};
+let keySet = false;
+
+async function api(path, body) {
+  const r = await fetch(path, body !== undefined ? {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)} : {});
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.detail || r.statusText);
+  return j;
+}
+
+async function saveKey() {
+  try { await api('/api/key', {key: $('key').value}); $('key').value = ''; refresh(); } catch (e) { alert(e.message); }
+}
+async function run(b) {
+  try { await api('/api/run/' + b, {}); refresh(); } catch (e) { alert(e.message); }
+}
+
+function result(r) {
+  const rs = r.routers || {}, ks = (r.ks || []).filter(k => k > 1);
+  const mode = (Object.values(rs)[0] || {}).mode || 'step';
+  const [m, label, explain] = METRIC[mode];
+  const mock = Object.values(rs).some(v => v.mock);
+  const full = r.catalog_tokens;
+  const cell = (v, k) => `<td><div class="v">${pct(v[`${m}@${k}`])}</div><div class="t">${num(v[`tokens@${k}`])} tok</div></td>`;
+  const rows = Object.entries(rs).map(([n, v]) => `<tr><td><b>${esc(LABEL(n))}</b>
+      <div class="t">${v.latency_p50_ms == null ? '—' : v.latency_p50_ms.toFixed(0) + ' ms'} · $${((v.cost_per_call_usd || 0) * 1000).toFixed(3)}/1k calls${v.ece != null ? ` · ECE ${v.ece.toFixed(3)}` : ''}${v.errors ? ` · <span style="color:var(--bad)">${v.errors} errors</span>` : ''}</div></td>` +
+    ks.map(k => cell(v, k)).join('') + '</tr>').join('');
+  return `${mock ? '<div><span class="mock">MOCK — not real results</span></div>' : ''}
+    <table class="grid2"><tr><th></th>${ks.map(k => `<th>top ${k} tools</th>`).join('')}</tr>${rows}</table>
+    <div class="meta"><b>${label}</b>: ${explain}. "tok" = tool definitions the agent loads per turn, vs <b>${num(full)}</b> with every tool loaded.</div>
+    <div class="meta">${num(r.cases)} decisions from ${num(r.tasks)} tasks · ${esc(r.run_id)}</div>`;
+}
+
+async function refresh() {
+  const s = await api('/api/state');
+  keySet = s.key_set || s.mock;
+  $('keyrow').hidden = keySet; $('keyok').hidden = !keySet;
+  $('mockflag').innerHTML = s.mock ? ' <span class="mock">mock mode</span>' : '';
+  $('cards').innerHTML = Object.entries(s.benchmarks).map(([b, x]) => {
+    const c = x.catalog;
+    const p = x.progress, frac = p && p.total ? p.done / p.total : 0;
+    return `<div class="card">
+      <div><h2>${esc(x.name)}</h2><div class="meta">${esc(x.by)} · ${c ? `${c.tools} tools across ${c.servers} MCP servers` : 'tool catalog not built yet'}</div></div>
+      <div><button ${!keySet || !c || x.running ? 'disabled' : ''} onclick="run('${b}')">${x.running ? 'Running…' : x.result ? 'Run again' : 'Run'}</button></div>
+      ${x.running ? `<div><div class="bar"><i style="width:${(frac * 100).toFixed(1)}%"></i></div><div class="meta">${p ? `${p.done} / ${p.total}` : 'starting…'}</div></div>` : ''}
+      ${x.error ? `<div class="err">${esc(x.error)}</div>` : ''}
+      ${x.result ? result(x.result) : ''}
+    </div>`;
+  }).join('');
+}
+refresh();
+setInterval(refresh, 3000);
+</script>
+</body>
+</html>
