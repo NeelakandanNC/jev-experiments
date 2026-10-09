@@ -85,9 +85,20 @@ class BrowserDevice(Device):
 
     async def click(self, x, y):
         await self.page.mouse.click(*self.to_css(x, y))
+        await self._close_native_popup()
 
     async def double_click(self, x, y):
         await self.page.mouse.dblclick(*self.to_css(x, y))
+        await self._close_native_popup()
+
+    async def _close_native_popup(self):
+        # A clicked <select> opens a native popup that isn't in screenshots and blocks them in headless
+        # Chromium. Close it; the select stays focused, and the `select` action picks options by text.
+        try:
+            if await self.page.evaluate("document.activeElement && document.activeElement.tagName === 'SELECT'"):
+                await self.page.keyboard.press("Escape")
+        except Exception:
+            pass
 
     async def type_text(self, text):
         await self.page.keyboard.type(text)

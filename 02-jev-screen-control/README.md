@@ -29,11 +29,14 @@ No UI-detection dataset was needed: every training screenshot is labelled by the
 - `label.js` also finds classic scrollbars (Playwright hides them in headless mode by default; we turn that off) and skips elements hidden behind overlays.
 
 ```bash
-./scripts/fetch_assets.sh                       # icons, CSS frameworks, fonts (npm)
-python -m bench.make_dataset --synth 3000       # ~4.3k screenshots, ~80k boxes
-python -m bench.train_detector --epochs 30      # CPU is fine; models/screenjev-yolo.pt + metrics
+./scripts/fetch_assets.sh                       # icons, CSS frameworks, fonts (from the npm registry)
+python -m bench.make_dataset --synth 3000       # ~4.2k train / 365 val screenshots, ~56k boxes
 python -m bench.viz_labels train 20 /tmp/viz    # eyeball the labels
+python -m bench.train_detector --device 0 --epochs 40 --imgsz 960 --cache disk   # GPU
+python -m bench.train_detector --epochs 30 --imgsz 640                            # CPU (hours)
 ```
+
+On a GPU in one click: [`notebooks/train_detector_colab.ipynb`](notebooks/train_detector_colab.ipynb) ([open in Colab](https://colab.research.google.com/github/NeelakandanNC/jev-experiments/blob/ccr-79ef4f1c-ef404d/02-jev-screen-control/notebooks/train_detector_colab.ipynb)). It builds the same dataset (same seeds), trains on the T4 and pushes or downloads `models/screenjev-yolo.pt`.
 
 OmniParser v2's detector (Microsoft, YOLOv8, one "interactable" class) plugs in with `--detector omniparser`. The DOM itself is available as an oracle detector, `--detector dom` (browser only), to measure how much the detector's misses cost.
 

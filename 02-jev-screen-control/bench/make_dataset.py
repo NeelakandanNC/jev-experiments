@@ -92,40 +92,51 @@ async def render_synth(seeds: list[int], split: str, workers: int, stats: dict) 
     shutil.rmtree(tmp, ignore_errors=True)
 
 
-async def render_miniwob(tasks: list[str], seeds: list[int], split: str, stats: dict, rng: random.Random) -> None:
-    for scale in (3.0, 2.0):
+async def render_miniwob(tasks: list[str], seeds: list[int], split: str, stats: dict, workers: int = 4) -> None:
+    """Each (task, seed) is rendered at 3x, and about half of them again at 2x. Randomness is per sample,
+    so the output doesn't depend on the number of workers."""
+    async def worker(scale: float, queue: asyncio.Queue):
         async with MiniWoBEnv(scale=scale) as env:
-            for task in tasks:
-                for seed in seeds:
-                    if rng.random() < 0.5 and scale == 2.0:
-                        continue  # ~1/3 of samples at 2x, rest at 3x
-                    try:
-                        await env.reset(task, seed)
-                        # random interactions, so opened menus / expanded sections / dialogs get labelled too
-                        for _ in range(rng.choice([0, 0, 1, 2])):
-                            els = await env.device.dom_elements()
-                            clickable = [e for e in els if e["cls"] not in ("scrollbar", "text_input")]
-                            if not clickable:
-                                break
-                            x1, y1, x2, y2 = rng.choice(clickable)["box"]
-                            await env.device.click((x1 + x2) / 2, (y1 + y2) / 2)
-                            await asyncio.sleep(0.1)
-                            if (await env.result())[0]:  # the click ended the episode: START cover is up
-                                await env.reset(task, seed)
-                                break
-                        labels = await env.device.dom_elements()
-                        img = await env.device.screenshot()
-                        stats["boxes"] += write_sample(split, f"mw_{task}_{seed}_{int(scale)}x", img, labels)
-                        stats["miniwob"] += 1
-                    except Exception as e:
-                        stats["errors"].append(f"miniwob {task} {seed}: {e}")
-            print(f"  miniwob {scale}x done: {stats['miniwob']} pages", flush=True)
+            while not queue.empty():
+                task, seed = queue.get_nowait()
+                rng = random.Random(f"{task}/{seed}/{scale}")
+                try:
+                    await env.reset(task, seed)
+                    # random interactions, so opened menus / expanded sections / dialogs get labelled too
+                    for _ in range(rng.choice([0, 0, 1, 2])):
+                        els = await env.device.dom_elements()
+                        clickable = [e for e in els if e["cls"] not in ("scrollbar", "text_input")]
+                        if not clickable:
+                            break
+                        x1, y1, x2, y2 = rng.choice(clickable)["box"]
+                        await env.device.click((x1 + x2) / 2, (y1 + y2) / 2)
+                        await asyncio.sleep(0.1)
+                        if (await env.result())[0]:  # the click ended the episode: START cover is up
+                            await env.reset(task, seed)
+                            break
+                    labels = await env.device.dom_elements()
+                    img = await env.device.screenshot()
+                    stats["boxes"] += write_sample(split, f"mw_{task}_{seed}_{int(scale)}x", img, labels)
+                    stats["miniwob"] += 1
+                except Exception as e:
+                    stats["errors"].append(f"miniwob {task} {seed}: {e}")
+                if stats["miniwob"] % 200 == 0:
+                    print(f"  miniwob {stats['miniwob']} pages", flush=True)
+
+    for scale in (3.0, 2.0):
+        queue: asyncio.Queue = asyncio.Queue()
+        for t in tasks:
+            for sd in seeds:
+                if scale == 3.0 or random.Random(f"{t}/{sd}/2x").random() < 0.5:
+                    queue.put_nowait((t, sd))
+        await asyncio.gather(*(worker(scale, queue) for _ in range(workers)))
 
 
 async def main_async(a) -> None:
+    global OUT
+    OUT = Path(a.out).resolve()
     if a.clean and OUT.exists():
         shutil.rmtree(OUT)
-    rng = random.Random(0)
     stats = {"synth": 0, "miniwob": 0, "boxes": 0, "errors": []}
     n_val = max(1, int(a.synth * a.val_frac))
     await render_synth(list(range(a.synth - n_val)), "train", a.workers, stats)
@@ -133,9 +144,9 @@ async def main_async(a) -> None:
     mw_tasks = detector_train_tasks()
     seeds = list(range(a.miniwob_seeds))
     n_mw_val = max(1, int(len(seeds) * a.val_frac))
-    await render_miniwob(mw_tasks, seeds[n_mw_val:], "train", stats, rng)
-    await render_miniwob(mw_tasks, seeds[:n_mw_val], "val", stats, rng)
-    await render_miniwob(SUITE, list(range(10_000, 10_000 + a.suite_seeds)), "test_miniwob_suite", stats, rng)
+    await render_miniwob(mw_tasks, seeds[n_mw_val:], "train", stats, a.workers)
+    await render_miniwob(mw_tasks, seeds[:n_mw_val], "val", stats, a.workers)
+    await render_miniwob(SUITE, list(range(10_000, 10_000 + a.suite_seeds)), "test_miniwob_suite", stats, a.workers)
 
     (OUT / "data.yaml").write_text(
         f"path: {OUT}\ntrain: images/train\nval: images/val\ntest: images/test_miniwob_suite\n"
@@ -163,6 +174,7 @@ def main():
     ap.add_argument("--val-frac", type=float, default=0.08)
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--clean", action="store_true")
+    ap.add_argument("--out", default=str(OUT))
     asyncio.run(main_async(ap.parse_args()))
 
 

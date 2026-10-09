@@ -1,6 +1,7 @@
 """Train the UI-element YOLO on data/yolo (bench/make_dataset.py), on CPU if that's all there is.
 
-    python -m bench.train_detector --epochs 30 --imgsz 640
+    python -m bench.train_detector --epochs 30 --imgsz 640                      # CPU
+    python -m bench.train_detector --device 0 --epochs 40 --imgsz 960 --cache disk   # GPU (notebooks/train_detector_colab.ipynb)
     python -m bench.train_detector --eval-only models/screenjev-yolo.pt     # mAP on val + eval-suite pages
 
 Starts from COCO-pretrained YOLO11n. The best checkpoint is copied to models/screenjev-yolo.pt and
@@ -44,6 +45,7 @@ def main():
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--fraction", type=float, default=1.0, help="use this share of the training images")
     ap.add_argument("--name", default="screenjev")
+    ap.add_argument("--cache", default="ram", help="ram | disk | none (ram needs ~1 GB per 1k images at 640 px)")
     ap.add_argument("--resume", action="store_true")
     ap.add_argument("--eval-only")
     ap.add_argument("--eval-imgsz", default="640,960")
@@ -63,7 +65,7 @@ def main():
     else:
         YOLO(a.model).train(
             data=str(DATA), epochs=a.epochs, imgsz=a.imgsz, batch=a.batch, device=a.device, workers=a.workers,
-            project=str(project), name=a.name, exist_ok=True, fraction=a.fraction, cache="ram", plots=True,
+            project=str(project), name=a.name, exist_ok=True, fraction=a.fraction, cache=False if a.cache == "none" else a.cache, plots=True,
             # screenshots: no flips (text / arrows have direction), mild scale, no mosaic at the end
             fliplr=0.0, flipud=0.0, degrees=0.0, scale=0.3, translate=0.05, mosaic=1.0, close_mosaic=5,
             hsv_h=0.1, hsv_s=0.5, hsv_v=0.3, patience=50)
