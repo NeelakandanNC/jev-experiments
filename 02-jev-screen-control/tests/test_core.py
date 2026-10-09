@@ -103,3 +103,13 @@ async def test_browser_dom_labels_and_miniwob():
         await asyncio.sleep(0.2)
         done, raw, _ = await env.result()
         assert done and raw > 0
+
+
+def test_point_for_clicks_the_quoted_word_in_a_text_run():
+    from screenjev.detect import _text_el
+    run = split_words("Lobortis in. Enim risus", (0, 0, 230, 10), 0, 0.9)
+    el = _text_el(run)
+    assert el.center[0] == pytest.approx(115)
+    assert el.point_for('click "Lobortis"')[0] == pytest.approx(40)  # "Lobortis" spans x 0..80
+    assert el.point_for('the link "Enim risus"')[0] == pytest.approx((130 + 230) / 2)
+    assert el.point_for("no quotes here") == el.center

@@ -108,7 +108,8 @@ def _group(words: list[Word]) -> list[Element]:
 
 def _text_el(run: list[Word]) -> Element:
     box = (min(w.box[0] for w in run), min(w.box[1] for w in run), max(w.box[2] for w in run), max(w.box[3] for w in run))
-    return Element("", TEXT, box, text=" ".join(w.text for w in run), score=min(w.score for w in run), source="ocr")
+    return Element("", TEXT, box, text=" ".join(w.text for w in run), score=min(w.score for w in run), source="ocr",
+                   parts=[(w.text, w.box) for w in run])
 
 
 def _label_for(b: Element, texts: list[Element]) -> str:

@@ -101,7 +101,7 @@ async def run(a) -> None:
                 err = s.error
             except Exception as e:
                 s, err = None, f"{type(e).__name__}: {e}"
-        pt = s.element.center if s and s.element else None
+        pt = s.element.point_for(sample["instruction"]) if s and s.element else None
         await write({**sample, "variant": v, "n_elements": len(screen.elements), "t_detect_s": t_det,
                      "reachable": any(inside(e.center, sample["gt"]) for e in screen.elements),
                      "reachable_widget": any(inside(e.center, sample["gt"]) for e in screen.elements if e.cls != "text"),

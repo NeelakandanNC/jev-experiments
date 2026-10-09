@@ -1,0 +1,154 @@
+{
+ "base": "yolo11n.pt",
+ "epochs": 15,
+ "imgsz": 640,
+ "batch": 16,
+ "device": "cpu",
+ "train_hours": 3.01,
+ "dataset": {
+  "train": {
+   "images": 4187,
+   "boxes": {
+    "button": 10760,
+    "link": 17200,
+    "text_input": 2831,
+    "checkbox": 3944,
+    "radio": 1906,
+    "toggle": 1309,
+    "dropdown": 424,
+    "slider": 398,
+    "tab": 4643,
+    "icon": 5763,
+    "back": 373,
+    "close": 1880,
+    "menu": 2486,
+    "search": 1029,
+    "scrollbar": 1512
+   }
+  },
+  "val": {
+   "images": 365,
+   "boxes": {
+    "button": 950,
+    "link": 1624,
+    "text_input": 260,
+    "checkbox": 382,
+    "radio": 194,
+    "toggle": 122,
+    "dropdown": 30,
+    "slider": 36,
+    "tab": 455,
+    "icon": 556,
+    "back": 34,
+    "close": 195,
+    "menu": 195,
+    "search": 91,
+    "scrollbar": 128
+   }
+  },
+  "test_miniwob_suite": {
+   "images": 146,
+   "boxes": {
+    "button": 120,
+    "link": 21,
+    "text_input": 107,
+    "checkbox": 58,
+    "radio": 40,
+    "toggle": 0,
+    "dropdown": 10,
+    "slider": 0,
+    "tab": 72,
+    "icon": 0,
+    "back": 0,
+    "close": 0,
+    "menu": 0,
+    "search": 0,
+    "scrollbar": 10
+   }
+  }
+ },
+ "metrics": {
+  "imgsz640": {
+   "val": {
+    "mAP50": 0.9247,
+    "mAP50-95": 0.7563,
+    "precision": 0.9005,
+    "recall": 0.8623,
+    "per_class_mAP50-95": {
+     "button": 0.8818,
+     "link": 0.7044,
+     "text_input": 0.8964,
+     "checkbox": 0.6887,
+     "radio": 0.5998,
+     "toggle": 0.8463,
+     "dropdown": 0.8195,
+     "slider": 0.7377,
+     "tab": 0.8453,
+     "icon": 0.7507,
+     "back": 0.8098,
+     "close": 0.6267,
+     "menu": 0.7225,
+     "search": 0.6917,
+     "scrollbar": 0.7225
+    }
+   },
+   "miniwob_suite": {
+    "mAP50": 0.7039,
+    "mAP50-95": 0.5142,
+    "precision": 0.8974,
+    "recall": 0.6724,
+    "per_class_mAP50-95": {
+     "button": 0.5996,
+     "link": 0.5439,
+     "text_input": 0.9482,
+     "checkbox": 0.3,
+     "radio": 0.4276,
+     "dropdown": 0.0,
+     "tab": 0.3451,
+     "scrollbar": 0.9496
+    }
+   }
+  },
+  "imgsz960": {
+   "val": {
+    "mAP50": 0.9433,
+    "mAP50-95": 0.7849,
+    "precision": 0.9233,
+    "recall": 0.9028,
+    "per_class_mAP50-95": {
+     "button": 0.9037,
+     "link": 0.7338,
+     "text_input": 0.9174,
+     "checkbox": 0.769,
+     "radio": 0.7293,
+     "toggle": 0.9031,
+     "dropdown": 0.8564,
+     "slider": 0.7263,
+     "tab": 0.8641,
+     "icon": 0.7707,
+     "back": 0.7837,
+     "close": 0.6939,
+     "menu": 0.7478,
+     "search": 0.7682,
+     "scrollbar": 0.6063
+    }
+   },
+   "miniwob_suite": {
+    "mAP50": 0.6505,
+    "mAP50-95": 0.4064,
+    "precision": 0.8233,
+    "recall": 0.6426,
+    "per_class_mAP50-95": {
+     "button": 0.6648,
+     "link": 0.3368,
+     "text_input": 0.8994,
+     "checkbox": 0.2987,
+     "radio": 0.4161,
+     "dropdown": 0.0,
+     "tab": 0.0025,
+     "scrollbar": 0.6329
+    }
+   }
+  }
+ }
+}

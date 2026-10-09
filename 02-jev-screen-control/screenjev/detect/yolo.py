@@ -16,7 +16,8 @@ DEFAULT_WEIGHTS = ROOT / "models" / "screenjev-yolo.pt"
 class YoloDetector:
     name = "yolo"
 
-    def __init__(self, weights: str | Path | None = None, conf: float = 0.25, imgsz: int = 960, device: str = "cpu"):
+    def __init__(self, weights: str | Path | None = None, conf: float = 0.25, imgsz: int | str = "auto",
+                 device: str = "cpu"):
         from ultralytics import YOLO
         weights = Path(weights or os.getenv("SCREENJEV_YOLO_WEIGHTS") or DEFAULT_WEIGHTS)
         if not weights.exists():
@@ -26,8 +27,16 @@ class YoloDetector:
         self.conf, self.imgsz, self.device = conf, imgsz, device
         self.names = self.model.names
 
+    def size_for(self, image: Image.Image) -> int:
+        """auto: 640 for small screens (phone-sized, MiniWoB), 960 for desktop-sized ones. Upscaling a small
+        screenshot past its own size hurts (held-out MiniWoB mAP50 70% at 640 vs 65% at 960), while big
+        screenshots gain (val mAP50 92.5% -> 94.3%)."""
+        if self.imgsz != "auto":
+            return int(self.imgsz)
+        return 640 if max(image.size) <= 900 else 960
+
     def boxes(self, image: Image.Image) -> list[Element]:
-        r = self.model.predict(image, imgsz=self.imgsz, conf=self.conf, agnostic_nms=True, iou=0.5,
+        r = self.model.predict(image, imgsz=self.size_for(image), conf=self.conf, agnostic_nms=True, iou=0.5,
                                device=self.device, verbose=False, max_det=300)[0]
         out = []
         for (x1, y1, x2, y2), c, s in zip(r.boxes.xyxy.tolist(), r.boxes.cls.tolist(), r.boxes.conf.tolist()):

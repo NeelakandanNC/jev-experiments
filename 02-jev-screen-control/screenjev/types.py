@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -36,6 +37,7 @@ class Element:
     label: str = ""                           # nearby text naming it (field label, checkbox label)
     score: float = 1.0                        # detector confidence
     source: str = "yolo"                      # yolo | ocr | dom | omniparser
+    parts: list[tuple[str, tuple[float, float, float, float]]] = field(default_factory=list)  # OCR words (text runs)
 
     @property
     def center(self) -> tuple[float, float]:
@@ -50,6 +52,27 @@ class Element:
     def contains(self, x: float, y: float) -> bool:
         x1, y1, x2, y2 = self.box
         return x1 <= x <= x2 and y1 <= y <= y2
+
+    def point_for(self, target: str) -> tuple[float, float]:
+        """Where to click. For a run of OCR text, the words the target quotes (`the link "in."`), if present."""
+        if self.parts and target:
+            norm = lambda t: re.sub(r"[^a-z0-9]+", "", t.lower())
+            for q in re.findall(r'"([^"]+)"|\'([^\']+)\'', target):
+                want = norm(q[0] or q[1])
+                if not want:
+                    continue
+                words = [norm(w) for w, _ in self.parts]
+                for i in range(len(words)):
+                    acc = ""
+                    for j in range(i, len(words)):
+                        acc += words[j]
+                        if acc == want:
+                            boxes = [b for _, b in self.parts[i:j + 1]]
+                            return ((min(b[0] for b in boxes) + max(b[2] for b in boxes)) / 2,
+                                    (min(b[1] for b in boxes) + max(b[3] for b in boxes)) / 2)
+                        if not want.startswith(acc):
+                            break
+        return self.center
 
     def describe(self, width: int, height: int) -> str:
         """One line the decision model reads: kind, text, label, where it is."""

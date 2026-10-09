@@ -122,7 +122,7 @@ class Agent:
                 if sel and sel.element is not None:
                     guess = f"; best guess {sel.element.describe(screen.width, screen.height)} at p={sel.confidence:.2f}"
                 return f"NOT DONE: target not found ({why}{guess})", False
-            x, y = el.center
+            x, y = el.point_for(step.target)
             what = f"{el.describe(screen.width, screen.height)} [{el.id}" + (f", p={sel.confidence:.2f}]" if sel.confidence is not None else "]")
             if a == "click":
                 await d.click(x, y)

@@ -93,6 +93,29 @@
     out.push({cls, box, text: cls === "scrollbar" ? "" : textOf(el), tag: el.tagName.toLowerCase()});
   }
 
+  // Non-synthetic pages: clickable things that aren't semantic widgets (<span class="alink">, <div onclick>):
+  // the outermost element with cursor:pointer, as a link if it's inline text or underlined, else a button.
+  if (!document.querySelector("[data-ui]")) {
+    for (const el of document.body.querySelectorAll("*")) {
+      if (taken.has(el) || ["LABEL", "OPTION", "HTML", "BODY"].includes(el.tagName)) continue;
+      const cs = getComputedStyle(el);
+      if (cs.cursor !== "pointer") continue;
+      const pcs = el.parentElement ? getComputedStyle(el.parentElement) : null;
+      if (pcs && pcs.cursor === "pointer") continue;  // part of a bigger clickable
+      let p = el.parentElement, inside = false;
+      while (p) { if (taken.has(p)) { inside = true; break; } p = p.parentElement; }
+      if (inside || el.querySelector("input, select, textarea, button, a[href]")) continue;
+      const text = textOf(el);
+      if (!text && !el.querySelector("svg, img, i")) continue;
+      const box = visibleRect(el);
+      if (!box) continue;
+      const inline = cs.display.startsWith("inline") && cs.display !== "inline-block";
+      const cls = !text ? iconKind(el, "") : (inline || /underline/.test(cs.textDecorationLine)) ? "link" : "button";
+      taken.add(el);
+      out.push({cls, box, text, tag: el.tagName.toLowerCase()});
+    }
+  }
+
   // scrollbars: classic (non-overlay) bars of scrollable boxes and of the page itself
   const bar = (x1, y1, x2, y2) => {
     x1 = Math.max(0, x1); y1 = Math.max(0, y1); x2 = Math.min(vw, x2); y2 = Math.min(vh, y2);

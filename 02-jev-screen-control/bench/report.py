@@ -153,6 +153,22 @@ def detector_section() -> str:
     for size, res in m["metrics"].items():
         for split, r in res.items():
             md.append(f"| {size.replace('imgsz', '')} | {split} | {pct(r['mAP50'])} | {pct(r['mAP50-95'])} | {pct(r['precision'])} | {pct(r['recall'])} |")
+    curve = ROOT / "models" / "screenjev-yolo-training.csv"
+    if curve.exists():
+        import csv
+        rows = list(csv.DictReader(curve.open()))
+        ep = [int(r["epoch"]) for r in rows]
+        fig, ax = plt.subplots(figsize=(6, 3.2))
+        for key, lab, c in (("metrics/mAP50(B)", "mAP50", "#7c3aed"), ("metrics/mAP50-95(B)", "mAP50-95", "#0ea5e9"),
+                            ("metrics/recall(B)", "recall", "#f59e0b")):
+            ax.plot(ep, [100 * float(r[key]) for r in rows], marker="o", ms=3, label=lab, color=c)
+        ax.set(xlabel="epoch", ylabel="%", title="Detector training (val split, 640 px)", ylim=(0, 100))
+        ax.legend(fontsize=8)
+        ax.spines[["top", "right"]].set_visible(False)
+        fig.tight_layout()
+        fig.savefig(OUT / "detector_training.png", dpi=150)
+        plt.close(fig)
+        md.append("\n![Detector training](detector_training.png)\n")
     first = next(iter(m["metrics"].values()))["val"]["per_class_mAP50-95"]
     md += ["", "Per-class mAP50-95 (val): " + ", ".join(f"{k} {pct(v)}" for k, v in first.items()), ""]
     return "\n".join(md)
