@@ -1,0 +1,110 @@
+{
+ "run_id": "atlas-20261009-084923",
+ "benchmark": "atlas",
+ "routers": {
+  "jev": {
+   "cases": 2060,
+   "errors": 0,
+   "hit@1": 0.3975728155339806,
+   "recall@1": 0.3975728155339806,
+   "tokens@1": 210.24223300970874,
+   "hit@5": 0.708252427184466,
+   "recall@5": 0.708252427184466,
+   "tokens@5": 1076.3009708737864,
+   "hit@10": 0.8038834951456311,
+   "recall@10": 0.8038834951456311,
+   "tokens@10": 1879.5844660194175,
+   "mrr": 0.5305404350288664,
+   "full_catalog_tokens": 43297.0,
+   "latency_p50_ms": 619.1987079801038,
+   "latency_p95_ms": 895.7467996922786,
+   "cost_per_call_usd": 0.00044516305631067964,
+   "router_tokens_mean": 10599.120388349515,
+   "adaptive_size_mean": 5.553883495145631,
+   "adaptive_hit": 0.7407766990291262,
+   "adaptive_tokens": 1221.3582524271844,
+   "ece": 0.11105825242718446,
+   "reliability": [
+    {
+     "bin": "0.1-0.2",
+     "n": 95,
+     "confidence": 0.17705263157894732,
+     "accuracy": 0.1368421052631579
+    },
+    {
+     "bin": "0.2-0.3",
+     "n": 297,
+     "confidence": 0.25922558922558925,
+     "accuracy": 0.19865319865319866
+    },
+    {
+     "bin": "0.3-0.4",
+     "n": 405,
+     "confidence": 0.35555555555555557,
+     "accuracy": 0.2222222222222222
+    },
+    {
+     "bin": "0.4-0.5",
+     "n": 329,
+     "confidence": 0.4531610942249241,
+     "accuracy": 0.3556231003039514
+    },
+    {
+     "bin": "0.5-0.6",
+     "n": 290,
+     "confidence": 0.5530344827586207,
+     "accuracy": 0.41379310344827586
+    },
+    {
+     "bin": "0.6-0.7",
+     "n": 234,
+     "confidence": 0.6546153846153846,
+     "accuracy": 0.5170940170940171
+    },
+    {
+     "bin": "0.7-0.8",
+     "n": 164,
+     "confidence": 0.749939024390244,
+     "accuracy": 0.6646341463414634
+    },
+    {
+     "bin": "0.8-0.9",
+     "n": 110,
+     "confidence": 0.852,
+     "accuracy": 0.7090909090909091
+    },
+    {
+     "bin": "0.9-1.0",
+     "n": 136,
+     "confidence": 0.9603676470588234,
+     "accuracy": 0.8235294117647058
+    }
+   ],
+   "top1_accuracy": 0.3975728155339806,
+   "mean_confidence": 0.5086310679611652,
+   "mode": "step",
+   "mock": false
+  }
+ },
+ "ks": [
+  1,
+  5,
+  10
+ ],
+ "adaptive": 0.9,
+ "limit_tasks": null,
+ "seed": 0,
+ "catalog_tools": 246,
+ "catalog_servers": 33,
+ "catalog_tokens": 43297,
+ "gold_steps": 2421,
+ "skipped_gold_not_in_catalog": 361,
+ "tasks": 495,
+ "cases": 2060,
+ "started": 1791515966.276421,
+ "routes": {
+  "jev": "https://openrouter.ai/api/alpha/decisions"
+ },
+ "notes": "Jev via OpenRouter (provider TypeSafe). OpenRouter free-tier credit limits stopped the run partway, so missing decisions were completed with --retry-errors on further OpenRouter keys, and 25 were taken from run atlas-20261009-083459. Every decision targets typesafe/jev-1.13; debug.served_by records the snapshot for decisions made after this note.",
+ "finished": 1791516556.777189
+}

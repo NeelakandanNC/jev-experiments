@@ -116,7 +116,7 @@ def charts(data: dict):
         ax.set_xlim(0, 1)
         ax.set_ylim(0, 1)
         ax.set_xlabel("confidence in top pick", color=MUTED)
-        ax.legend(frameon=False, fontsize=8.5, loc="upper left")
+        ax.legend(frameon=True, framealpha=0.9, edgecolor=GRID, fontsize=8.5, loc="lower right")
         _style(ax, name)
     axes[0].set_ylabel("top pick right", color=MUTED)
     fig.suptitle("Does the router's confidence mean anything? (diagonal = perfectly calibrated)", x=0.02, ha="left",

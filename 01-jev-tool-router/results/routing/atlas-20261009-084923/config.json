@@ -1,0 +1,27 @@
+{
+ "run_id": "atlas-20261009-084923",
+ "benchmark": "atlas",
+ "routers": [
+  "jev"
+ ],
+ "ks": [
+  1,
+  5,
+  10
+ ],
+ "adaptive": 0.9,
+ "limit_tasks": null,
+ "seed": 0,
+ "catalog_tools": 246,
+ "catalog_servers": 33,
+ "catalog_tokens": 43297,
+ "gold_steps": 2421,
+ "skipped_gold_not_in_catalog": 361,
+ "tasks": 495,
+ "cases": 2060,
+ "started": 1791515966.276421,
+ "routes": {
+  "jev": "https://openrouter.ai/api/alpha/decisions"
+ },
+ "notes": "Jev via OpenRouter (provider TypeSafe). OpenRouter free-tier credit limits stopped the run partway, so missing decisions were completed with --retry-errors on further OpenRouter keys, and 25 were taken from run atlas-20261009-083459. Every decision targets typesafe/jev-1.13; debug.served_by records the snapshot for decisions made after this note."
+}

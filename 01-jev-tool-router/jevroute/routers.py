@@ -314,6 +314,7 @@ class DecisionRouter(Router):
 
         d = await self.client.decide(state, [self._choice(catalog, candidates, intent)])
         latency += d.latency_s; cost += d.cost_usd; tokens += d.input_tokens; calls += 1; mock |= d.mock
+        debug["served_by"] = d.model
         ans = d.answers.get("tool")
         if ans is None:  # refusal: fall back to candidate order
             scores, confidence = {}, None
