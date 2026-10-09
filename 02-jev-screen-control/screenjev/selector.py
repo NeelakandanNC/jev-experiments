@@ -60,15 +60,20 @@ class DecisionSelector:
         self.name = "jev" if model == "typesafe-ai/jev" else model.split("/")[-1]
         self.client = DecisionClient(model)
 
-    async def select(self, task: str, step: Step, screen: Screen) -> Selection:
+    async def select(self, task: str, step: Step, screen: Screen, allow_none: bool = True) -> Selection:
+        """allow_none=False when the target is known to be on screen (grounding benchmarks)."""
         if not screen.elements:
             return Selection(None, None, model=self.model, error="no elements detected")
         choices = [{"value": e.id, "description": e.describe(screen.width, screen.height)} for e in screen.elements]
-        choices.append({"value": NONE, "description": NONE_DESC})
+        if allow_none:
+            choices.append({"value": NONE, "description": NONE_DESC})
         q = [{"type": "choice", "name": "target", "instructions": INSTRUCTIONS, "choices": choices}]
-        d = await self.client.decide(step_input(task, step, screen), q)
-        a = d.answers.get("target")
-        ranked = a.ranked() if a else []
+        for attempt in range(2):  # an empty answer / refusal is rare; one retry
+            d = await self.client.decide(step_input(task, step, screen), q)
+            a = d.answers.get("target")
+            ranked = a.ranked() if a else []
+            if ranked:
+                break
         if not ranked:
             return Selection(None, None, latency_s=d.latency_s, cost_usd=d.cost_usd, tokens=d.input_tokens,
                              model=d.model or self.model, mock=d.mock, error="refusal / empty answer")
@@ -93,9 +98,10 @@ class LLMSelector:
         if self.llm.mock:
             self.llm.scripted = _mock_llm_select
 
-    async def select(self, task: str, step: Step, screen: Screen) -> Selection:
+    async def select(self, task: str, step: Step, screen: Screen, allow_none: bool = True) -> Selection:
         listing = "\n".join(f"{e.id}: {e.describe(screen.width, screen.height)}" for e in screen.elements)
-        r = await self.llm.json(LLM_SYSTEM, f"{step_input(task, step, screen)}\n\nElements:\n{listing}")
+        system = LLM_SYSTEM if allow_none else LLM_SYSTEM.replace(', or "none" if no element fits', " (the target is on the screen, so always pick one)")
+        r = await self.llm.json(system, f"{step_input(task, step, screen)}\n\nElements:\n{listing}")
         eid = str(r.data.get("element", "")).strip()
         try:
             conf = min(1.0, max(0.0, float(r.data.get("confidence"))))
@@ -113,7 +119,7 @@ class SomSelector:
     """The planner picked `step.element` itself; nothing to call."""
     name = "som"
 
-    async def select(self, task: str, step: Step, screen: Screen) -> Selection:
+    async def select(self, task: str, step: Step, screen: Screen, allow_none: bool = True) -> Selection:
         el = screen.by_id(step.element.strip())
         return Selection(el, None, [(step.element, 1.0)], model="planner")
 

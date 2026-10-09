@@ -14,7 +14,8 @@ from PIL import Image
 from ..types import TEXT, Element, Screen, reading_order
 from .ocr import Ocr, Word
 
-LABELLED = {"text_input", "dropdown", "checkbox", "radio", "toggle", "slider", "interactable"}
+LABELLED = {"text_input", "dropdown", "checkbox", "radio", "toggle", "slider"}
+ICONISH = {"icon", "back", "close", "menu", "search", "interactable", "button", "link", "tab"}  # "near" text if textless
 MAX_ELEMENTS = 250  # the Decisions API takes up to 255 choices per question
 
 
@@ -71,14 +72,17 @@ def merge(boxes: list[Element], words: list[Word], width: int, height: int) -> S
                 owner[wi] = bi
                 break
     for bi, b in enumerate(boxes):
+        ws = sorted((words[wi] for wi, o in owner.items() if o == bi), key=lambda w: (w.line, w.box[0]))
+        b.parts = [(w.text, w.box) for w in ws]  # lets a click land on the quoted word inside a wide box
         if not b.text:  # the DOM detector already knows its text
-            ws = sorted((words[wi] for wi, o in owner.items() if o == bi), key=lambda w: (w.line, w.box[0]))
             b.text = " ".join(w.text for w in ws)
 
     texts = _group([w for wi, w in enumerate(words) if wi not in owner])
     for b in boxes:
         if b.cls in LABELLED and not b.label:
             b.label = _label_for(b, texts)
+        elif b.cls in ICONISH and not b.text and not b.label:
+            b.label = _near_text(b, texts)
     elements = boxes + texts
     if len(elements) > MAX_ELEMENTS:  # keep every detected widget, drop the smallest text runs
         texts = sorted(texts, key=lambda e: -e.area)[: max(0, MAX_ELEMENTS - len(boxes))]
@@ -133,6 +137,21 @@ def _label_for(b: Element, texts: list[Element]) -> str:
                 d = x1 - tx2
             if 0 <= y1 - ty2 <= 1.5 * th and min(x2, tx2) - max(x1, tx1) > -th:
                 d = min(d, (y1 - ty2) * 1.2 + abs(tx1 - x1) * 0.2)
+        if d < best_d:
+            best, best_d = t, d
+    return best.text if best else ""
+
+
+def _near_text(b: Element, texts: list[Element]) -> str:
+    """For a textless icon: the closest text run (app-grid caption below, label beside), if it's close."""
+    x1, y1, x2, y2 = b.box
+    size = max(x2 - x1, y2 - y1)
+    best, best_d = None, 1.2 * size + 12
+    for t in texts:
+        tx1, ty1, tx2, ty2 = t.box
+        dx = max(0.0, tx1 - x2, x1 - tx2)
+        dy = max(0.0, ty1 - y2, y1 - ty2)
+        d = (dx * dx + dy * dy) ** 0.5
         if d < best_d:
             best, best_d = t, d
     return best.text if best else ""

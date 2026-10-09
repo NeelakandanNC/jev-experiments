@@ -57,8 +57,8 @@ class Element:
         """Where to click. For a run of OCR text, the words the target quotes (`the link "in."`), if present."""
         if self.parts and target:
             norm = lambda t: re.sub(r"[^a-z0-9]+", "", t.lower())
-            for q in re.findall(r'"([^"]+)"|\'([^\']+)\'', target):
-                want = norm(q[0] or q[1])
+            for q in re.findall(r'"([^"]+)"|“([^”]+)”|‘([^’]+)’|\'([^\']+)\'', target):
+                want = norm(next(x for x in q if x))
                 if not want:
                     continue
                 words = [norm(w) for w, _ in self.parts]
@@ -81,7 +81,8 @@ class Element:
         if self.text:
             parts.append(f'"{_clip(self.text, 80)}"')
         if self.label and self.label != self.text:
-            parts.append(f'labeled "{_clip(self.label, 60)}"')
+            how = "next to" if not self.text and self.cls not in ("text_input", "dropdown", "checkbox", "radio", "toggle", "slider") else "labeled"
+            parts.append(f'{how} "{_clip(self.label, 60)}"')
         parts.append(f"at {where(cx / width, cy / height)} ({100 * cx / width:.0f}%, {100 * cy / height:.0f}%)")
         return " ".join(parts)
 

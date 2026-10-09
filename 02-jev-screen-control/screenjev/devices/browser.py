@@ -97,6 +97,8 @@ class BrowserDevice(Device):
         try:
             if await self.page.evaluate("document.activeElement && document.activeElement.tagName === 'SELECT'"):
                 await self.page.keyboard.press("Escape")
+                self.note = ("that is a dropdown list whose options open off-screen: use the select action "
+                             "with this target and the option's text")
         except Exception:
             pass
 

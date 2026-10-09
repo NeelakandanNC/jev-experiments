@@ -88,7 +88,10 @@ class Agent:
                     res.status = step.action
                     outcome, acted = step.reason or step.action, False
                 else:
+                    self.device.note = ""
                     outcome, acted = await self.act(step, sel, screen)
+                    if self.device.note:
+                        outcome += f" ({self.device.note})"
                 rec = StepRecord(i, step.to_json(), sel.to_json() if sel else None, outcome, acted,
                                  len(screen.elements), t1 - t0, t2 - t1, t3 - t2)
                 res.steps.append(rec)

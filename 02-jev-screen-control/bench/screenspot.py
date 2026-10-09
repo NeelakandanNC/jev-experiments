@@ -11,6 +11,10 @@ Variants (<detector>+<selector>):
   yolo+llm               same elements, the chat LLM (gpt-6-luna) picks one, self-reported confidence
   omniparser+*           Microsoft OmniParser v2's YOLO instead of ours (downloads from Hugging Face)
   llm-coords             no detector: the vision LLM answers with x, y directly
+  <variant>@desc         the agent's split: gpt-6-luna first describes the target in words from the screenshot
+                         (no coordinates), then the picker grounds that description (one description per screenshot,
+                         shared by every @desc variant)
+Pickers must choose an element (the target is always on screen); --allow-none lets them say "none".
 Each detector runs once per screenshot; all its selectors see the same element list. Also recorded:
 whether any detected element's center lies in the target box (the detector's ceiling).
 Data: Hugging Face `HongxinLi/ScreenSpot_v2` (the parquet copy GUI-Actor evaluates on).
@@ -35,6 +39,14 @@ from .common import ece, git_rev, load_env, parse_variant, read_jsonl, run_dir
 DATASET = "HongxinLi/ScreenSpot_v2"
 DOMAIN = {"windows": "desktop", "macos": "desktop", "ios": "mobile", "android": "mobile", "tool": "web",
           "shop": "web", "gitlab": "web", "forum": "web"}
+
+DESC_SYSTEM = """You help another model find a UI element. That model cannot see the screenshot: it only gets a list of
+elements detected on it, each with its kind (button, link, text input, checkbox, tab, icon, back, close, menu, search,
+text, ...), its visible text, a nearby label, and its rough region (top-left, center, bottom-right, ...).
+Given the screenshot and an instruction, describe the one element to click so it can be picked from that list:
+its exact visible text in quotes if it has any, its kind, for an icon what it depicts and any text right next to it,
+and where it is in words (screen region, what it is next to). Never give coordinates or percentages.
+Reply with JSON only: {"target": "<one or two sentences>"}"""
 
 COORD_SYSTEM = """You locate UI elements. Given a screenshot and an instruction, return the point to click to carry
 it out, in pixel coordinates of the image you see (origin top-left), and your confidence (0 to 1) that the
@@ -68,7 +80,7 @@ def inside(pt, box) -> bool:
 async def run(a) -> None:
     out = run_dir("screenspot", a.run)
     variants = a.variants.split(",")
-    cfg = {"variants": variants, "limit_per_domain": a.limit, "domains": a.domains, "llm": a.llm, "mock": is_mock(),
+    cfg = {"variants": variants, "allow_none": a.allow_none, "limit_per_domain": a.limit, "domains": a.domains, "llm": a.llm, "mock": is_mock(),
            "dataset": DATASET, "git": git_rev(), "started": time.strftime("%Y-%m-%d %H:%M:%S")}
     (out / "config.json").write_text(json.dumps(cfg, indent=1))
     path = out / "cases.jsonl"
@@ -79,8 +91,14 @@ async def run(a) -> None:
         det, sel = parse_variant(v)
         by_det[det].append(sel)
     perceptions = {d: Perception(make_detector(d)) for d in by_det if d != "none"}
-    selectors = {s: make_selector(s) for d, ss in by_det.items() if d != "none" for s in ss}
-    coord_llm = LLM(a.llm) if "llm-coords" in variants else None
+    selectors = {s.split("@")[0]: make_selector(s.split("@")[0]) for d, ss in by_det.items() if d != "none" for s in ss}
+    coord_llm = LLM(a.llm) if any(v == "llm-coords" or v.endswith("@desc") for v in variants) else None
+    descriptions: dict[int, asyncio.Future] = {}
+    for r in read_jsonl(path):  # reuse earlier descriptions, so pickers added later ground the same text
+        if r.get("description") and r["idx"] not in descriptions:
+            f = asyncio.get_running_loop().create_future()
+            f.set_result(r["description"])
+            descriptions[r["idx"]] = f
     if coord_llm and coord_llm.mock:
         coord_llm.scripted = lambda m: {"x": 10, "y": 10, "confidence": 0.5}
     sem = asyncio.Semaphore(a.concurrency)
@@ -92,23 +110,43 @@ async def run(a) -> None:
             with path.open("a") as f:
                 f.write(json.dumps(row) + "\n")
 
-    async def one_select(det, sel_spec, sample, screen, t_det):
-        v = f"{det}+{sel_spec}"
-        step = Step("click", target=sample["instruction"])
+    async def describe(sample, img) -> dict:
+        """gpt-6-luna looks at the screenshot and describes the target in words (the agent's planner does this)."""
         async with sem:
             try:
-                s = await selectors[sel_spec].select(sample["instruction"], step, screen)
+                r = await coord_llm.json(DESC_SYSTEM, [{"type": "text", "text": f"Instruction: {sample['instruction']}"},
+                                                       image_part(img)])
+                return {"target": str(r.data.get("target") or sample["instruction"]), "cost_usd": r.cost_usd,
+                        "tokens": r.input_tokens + r.output_tokens, "latency_s": r.latency_s}
+            except Exception as e:
+                return {"target": sample["instruction"], "cost_usd": 0.0, "tokens": 0, "latency_s": None,
+                        "error": f"{type(e).__name__}: {e}"}
+
+    async def one_select(det, sel_spec, sample, screen, t_det, img):
+        v = f"{det}+{sel_spec}"
+        spec, _, mode = sel_spec.partition("@")
+        desc = None
+        if mode == "desc":
+            if sample["idx"] not in descriptions:
+                descriptions[sample["idx"]] = asyncio.ensure_future(describe(sample, img))
+            desc = await descriptions[sample["idx"]]
+        target = desc["target"] if desc else sample["instruction"]
+        step = Step("click", target=target)
+        async with sem:
+            try:
+                s = await selectors[spec].select(sample["instruction"], step, screen, allow_none=a.allow_none)
                 err = s.error
             except Exception as e:
                 s, err = None, f"{type(e).__name__}: {e}"
-        pt = s.element.point_for(sample["instruction"]) if s and s.element else None
+        pt = s.element.point_for(f"{sample['instruction']} {target}") if s and s.element else None
         await write({**sample, "variant": v, "n_elements": len(screen.elements), "t_detect_s": t_det,
                      "reachable": any(inside(e.center, sample["gt"]) for e in screen.elements),
                      "reachable_widget": any(inside(e.center, sample["gt"]) for e in screen.elements if e.cls != "text"),
                      "pred": pt, "pred_element": s.element.to_json() if s and s.element else None,
                      "hit": inside(pt, sample["gt"]), "confidence": s.confidence if s else None,
                      "ranked": s.to_json()["ranked"] if s else [], "latency_s": s.latency_s if s else None,
-                     "cost_usd": s.cost_usd if s else 0.0, "tokens": s.tokens if s else 0, "error": err})
+                     "cost_usd": s.cost_usd if s else 0.0, "tokens": s.tokens if s else 0, "error": err,
+                     "description": desc})
 
     async def coords(sample, img):
         async with sem:
@@ -141,7 +179,7 @@ async def run(a) -> None:
             screen = await perceptions[det].screen(img)
             t_det = time.perf_counter() - t0
             for s in todo:
-                pending.add(asyncio.create_task(one_select(det, s, sample, screen, t_det)))
+                pending.add(asyncio.create_task(one_select(det, s, sample, screen, t_det, img)))
         n[0] += 1
         if n[0] % 25 == 0:
             print(f"  {n[0]} screenshots", flush=True)
@@ -174,6 +212,8 @@ def summarize(rows: list[dict]) -> dict:
             "acc_at_50pct_coverage": sel.get(0.5), "acc_at_80pct_coverage": sel.get(0.8),
             "errors": sum(bool(r.get("error")) for r in rs),
             "cost_per_1k": 1000 * sum(r.get("cost_usd") or 0 for r in rs) / len(rs),
+            "describe_tokens_per_case": sum(((r.get("description") or {}).get("tokens") or 0) for r in rs) / len(rs),
+            "tokens_per_case": sum(r.get("tokens") or 0 for r in rs) / len(rs),
             "latency_p50_s": _median([r["latency_s"] for r in rs if r.get("latency_s") is not None]),
         }
         cells = defaultdict(list)
@@ -204,6 +244,7 @@ def main():
     ap.add_argument("--domains", help="comma-separated subset of mobile,desktop,web")
     ap.add_argument("--llm", default=DEFAULT_PLANNER, help="model for llm-coords")
     ap.add_argument("--concurrency", type=int, default=8)
+    ap.add_argument("--allow-none", action="store_true", help="let pickers answer 'none' (the target is always on screen here)")
     ap.add_argument("--run", help="results/screenspot/<run> (resumes if it exists)")
     asyncio.run(run(ap.parse_args()))
 

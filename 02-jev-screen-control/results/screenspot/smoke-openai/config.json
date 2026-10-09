@@ -1,0 +1,15 @@
+{
+ "variants": [
+  "yolo+luna",
+  "yolo+llm",
+  "omniparser+luna",
+  "llm-coords"
+ ],
+ "limit_per_domain": 10,
+ "domains": null,
+ "llm": "gpt-6-luna",
+ "mock": false,
+ "dataset": "HongxinLi/ScreenSpot_v2",
+ "git": "78c51a7",
+ "started": "2026-10-09 14:45:36"
+}

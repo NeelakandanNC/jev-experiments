@@ -9,6 +9,7 @@ from PIL import Image
 
 class Device(ABC):
     name = "device"
+    note = ""  # set by an action when the screen won't show what happened (read and cleared by the agent)
 
     @abstractmethod
     async def screenshot(self) -> Image.Image: ...

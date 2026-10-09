@@ -1,0 +1,24 @@
+{
+ "tasks": [
+  "click-button",
+  "click-checkboxes",
+  "login-user",
+  "choose-list",
+  "click-tab-2"
+ ],
+ "variants": [
+  "yolo+luna",
+  "yolo+llm",
+  "yolo+som",
+  "dom+luna"
+ ],
+ "episodes": 2,
+ "seed0": 0,
+ "planner": "gpt-6-luna",
+ "max_steps": 12,
+ "min_confidence": 0.0,
+ "scale": 3.0,
+ "mock": false,
+ "git": "78c51a7",
+ "started": "2026-10-09 14:57:11"
+}

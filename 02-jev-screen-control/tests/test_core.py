@@ -113,3 +113,4 @@ def test_point_for_clicks_the_quoted_word_in_a_text_run():
     assert el.point_for('click "Lobortis"')[0] == pytest.approx(40)  # "Lobortis" spans x 0..80
     assert el.point_for('the link "Enim risus"')[0] == pytest.approx((130 + 230) / 2)
     assert el.point_for("no quotes here") == el.center
+    assert el.point_for("the “Lobortis” link")[0] == pytest.approx(40)  # curly quotes, as GPT writes them
