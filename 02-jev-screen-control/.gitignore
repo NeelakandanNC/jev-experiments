@@ -1,0 +1,13 @@
+.venv/
+.env
+__pycache__/
+*.pyc
+.pytest_cache/
+data/assets/
+data/yolo/
+data/runs/
+data/weights/
+data/logs/
+data/cache/
+runs/
+results/*/*/traces/
