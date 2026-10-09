@@ -13,3 +13,7 @@ Jev is called through a Decisions API ([OpenRouter](https://openrouter.ai/docs/g
 ## Running
 
 Each experiment folder has its own README with setup, required keys, and the one-command benchmark.
+
+## License
+
+[MIT](LICENSE). The benchmarks used here keep their own licenses: MCP-Atlas data is CC-BY-4.0 (code MIT), MCP-Bench and MCP-Universe are Apache-2.0. They're cloned at setup time, not redistributed here.
