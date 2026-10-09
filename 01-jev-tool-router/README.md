@@ -19,6 +19,10 @@ That's 4 variations × 3 benchmarks, except MCP-Bench, which is scored at top-10
 
 ## Results
 
+![Jev vs OpenAI: routing accuracy, calibration, context and cost](results/comparison/jev-vs-openai.svg)
+
+<sub>Regenerate with `python -m bench.compare && python -m bench.infographic` (SVG + 3200×1800 PNG for posting).</sub>
+
 ![Jev vs OpenAI accuracy](results/comparison/accuracy.png)
 
 | Benchmark | Score | Model | top 5 | top 10 | Tool tokens (all → top 10) | Top-1 right | Mean confidence | ECE | p50 latency | $ / 1k decisions |
