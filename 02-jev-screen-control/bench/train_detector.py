@@ -47,6 +47,7 @@ def main():
     ap.add_argument("--name", default="screenjev")
     ap.add_argument("--cache", default="ram", help="ram | disk | none (ram needs ~1 GB per 1k images at 640 px)")
     ap.add_argument("--resume", action="store_true")
+    ap.add_argument("--resume-from", help="a last.pt pushed by scripts/checkpoint_sync.sh (fresh machine: rebuild data first)")
     ap.add_argument("--eval-only")
     ap.add_argument("--eval-imgsz", default="640,960")
     a = ap.parse_args()
@@ -60,6 +61,10 @@ def main():
     project = ROOT / "data" / "runs"
     last = project / a.name / "weights" / "last.pt"
     t0 = time.time()
+    if a.resume_from:
+        last.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(a.resume_from, last)
+        a.resume = True
     if a.resume and last.exists():
         YOLO(str(last)).train(resume=True)
     else:
