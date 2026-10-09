@@ -12,10 +12,13 @@ results produced that way are tagged mock and must never be reported.
 
 from __future__ import annotations
 
+import asyncio
+import json
 import math
 import os
 import re
 import time
+from collections import deque
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -38,6 +41,45 @@ def backend(model: str) -> tuple[str, str, str]:
 
 def has_key(model: str) -> bool:
     return bool(os.getenv(backend(model)[1]))
+
+
+class TokenRateLimiter:
+    """Keeps estimated input tokens per rolling minute under a cap (OpenAI enforces TPM per model).
+
+    Retries alone can't keep up once a run saturates the limit; pacing requests up front can.
+    """
+
+    def __init__(self, tpm: int):
+        self.tpm = tpm
+        self.window: deque[tuple[float, int]] = deque()
+        self.lock = asyncio.Lock()
+
+    async def acquire(self, tokens: int) -> None:
+        async with self.lock:
+            while True:
+                now = time.monotonic()
+                while self.window and now - self.window[0][0] > 60:
+                    self.window.popleft()
+                if sum(t for _, t in self.window) + tokens <= self.tpm or not self.window:
+                    self.window.append((now, tokens))
+                    return
+                await asyncio.sleep(60 - (now - self.window[0][0]) + 0.05)
+
+
+_LIMITERS: dict[str, TokenRateLimiter] = {}
+
+
+def _limiter(base_url: str) -> TokenRateLimiter | None:
+    default = "1500000" if base_url == OPENAI_BASE_URL else "0"  # 75% of gpt-6-luna's 2M TPM
+    tpm = int(os.getenv("JEVROUTE_TPM", default))
+    if tpm <= 0:
+        return None
+    return _LIMITERS.setdefault(base_url, TokenRateLimiter(tpm))
+
+
+def estimate_tokens(input: str, questions: list[dict[str, Any]]) -> int:
+    # ~5 chars/token matches OpenAI's reported usage on these requests (JSON choice lists)
+    return int((len(input) + len(json.dumps(questions))) / 5) + 50
 
 
 @dataclass
@@ -75,12 +117,14 @@ def is_mock() -> bool:
 
 class DecisionClient:
     def __init__(self, model: str = "typesafe-ai/jev", api_key: str | None = None, base_url: str | None = None,
-                 timeout: float = 60.0, max_retries: int = 3):
+                 timeout: float = 120.0, max_retries: int = 10):  # 429s back off and retry
         self.model = model
         self.mock = is_mock()
         self._client = None
+        self.limiter = None
         if not self.mock:
             url, key_var, self.wire_model = backend(model)
+            self.limiter = _limiter(url)
             key = api_key or os.getenv(key_var)
             if not key:
                 raise DecisionError(f"{key_var} is not set (needed for {model}; JEVROUTE_MOCK=1 for a dry run)")
@@ -93,6 +137,8 @@ class DecisionClient:
         if self.mock:
             return _mock_decide(self.model, input, questions)
 
+        if self.limiter:
+            await self.limiter.acquire(estimate_tokens(input, questions))
         t0 = time.perf_counter()
         resp = await self._client.decisions.with_raw_response.create(model=self.wire_model, input=input,
                                                                     questions=questions)

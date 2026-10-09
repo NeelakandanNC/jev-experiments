@@ -305,6 +305,9 @@ class DecisionRouter(Router):
             debug["servers"] = {s: round(p_server[s], 3) for s in ranked[:8]}
             debug["chosen_servers"] = chosen
             candidates = [t.name for s in chosen for t in catalog.servers[s]]
+            if len(candidates) < 2:  # the Decisions API requires at least 2 choices
+                extra = (await self._bm25.rank(state, catalog, intent)).order
+                candidates += [n for n in extra if n not in candidates][: 2 - len(candidates)]
             if len(candidates) > MAX_CHOICES:
                 sub = catalog.subset(candidates)
                 candidates = (await self._bm25.rank(state, sub, intent)).order[:MAX_CHOICES]

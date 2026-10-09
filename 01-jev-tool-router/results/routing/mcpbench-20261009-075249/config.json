@@ -1,0 +1,22 @@
+{
+ "run_id": "mcpbench-20261009-075249",
+ "benchmark": "mcpbench",
+ "routers": [
+  "decision:openai/gpt-6-luna"
+ ],
+ "ks": [
+  1,
+  5,
+  10
+ ],
+ "adaptive": 0.9,
+ "limit_tasks": null,
+ "seed": 0,
+ "catalog_tools": 257,
+ "catalog_servers": 28,
+ "catalog_tokens": 50256,
+ "skipped_no_gold": 1,
+ "tasks": 103,
+ "cases": 103,
+ "started": 1791512581.789443
+}

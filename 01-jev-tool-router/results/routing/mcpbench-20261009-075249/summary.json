@@ -1,0 +1,105 @@
+{
+ "run_id": "mcpbench-20261009-075249",
+ "benchmark": "mcpbench",
+ "routers": {
+  "gpt-6-luna": {
+   "cases": 103,
+   "errors": 0,
+   "hit@1": 0.8252427184466019,
+   "recall@1": 0.19596377885776425,
+   "tokens@1": 278.2718446601942,
+   "hit@5": 0.9514563106796117,
+   "recall@5": 0.5437092970468635,
+   "tokens@5": 1439.3009708737864,
+   "hit@10": 0.9514563106796117,
+   "recall@10": 0.724309628163441,
+   "tokens@10": 2549.8446601941746,
+   "mrr": 0.8823880088570943,
+   "full_catalog_tokens": 50256.0,
+   "latency_p50_ms": 897.0568759832531,
+   "latency_p95_ms": 3112.100258294958,
+   "cost_per_call_usd": 0.0007324446601941748,
+   "router_tokens_mean": 7324.446601941748,
+   "adaptive_size_mean": 4.543689320388349,
+   "adaptive_hit": 0.9320388349514563,
+   "adaptive_tokens": 1102.0194174757282,
+   "ece": 0.3302020202020202,
+   "reliability": [
+    {
+     "bin": "0.1-0.2",
+     "n": 7,
+     "confidence": 0.1742857142857143,
+     "accuracy": 1.0
+    },
+    {
+     "bin": "0.2-0.3",
+     "n": 16,
+     "confidence": 0.25187499999999996,
+     "accuracy": 0.6875
+    },
+    {
+     "bin": "0.3-0.4",
+     "n": 14,
+     "confidence": 0.34928571428571425,
+     "accuracy": 0.7857142857142857
+    },
+    {
+     "bin": "0.4-0.5",
+     "n": 10,
+     "confidence": 0.45600000000000007,
+     "accuracy": 0.9
+    },
+    {
+     "bin": "0.5-0.6",
+     "n": 11,
+     "confidence": 0.5427272727272728,
+     "accuracy": 0.9090909090909091
+    },
+    {
+     "bin": "0.6-0.7",
+     "n": 9,
+     "confidence": 0.6677777777777778,
+     "accuracy": 1.0
+    },
+    {
+     "bin": "0.7-0.8",
+     "n": 9,
+     "confidence": 0.7544444444444445,
+     "accuracy": 0.7777777777777778
+    },
+    {
+     "bin": "0.8-0.9",
+     "n": 9,
+     "confidence": 0.87,
+     "accuracy": 0.6666666666666666
+    },
+    {
+     "bin": "0.9-1.0",
+     "n": 14,
+     "confidence": 0.9764285714285714,
+     "accuracy": 1.0
+    }
+   ],
+   "top1_accuracy": 0.8484848484848485,
+   "mean_confidence": 0.5552525252525253,
+   "mode": "task",
+   "mock": false
+  }
+ },
+ "ks": [
+  1,
+  5,
+  10
+ ],
+ "adaptive": 0.9,
+ "limit_tasks": null,
+ "seed": 0,
+ "catalog_tools": 257,
+ "catalog_servers": 28,
+ "catalog_tokens": 50256,
+ "skipped_no_gold": 1,
+ "tasks": 103,
+ "cases": 103,
+ "started": 1791512581.789443,
+ "finished": 1791513180.841839
+}

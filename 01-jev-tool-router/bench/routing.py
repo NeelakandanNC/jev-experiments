@@ -46,6 +46,44 @@ async def run_case(router: Router, case: Case, catalog, ks: list[int], adaptive:
     return row
 
 
+async def retry_errors(args) -> Path:
+    """Re-run only the decisions that errored in an existing run, then rewrite its summary."""
+    out = RESULTS / args.retry_errors
+    config = json.loads((out / "config.json").read_text())
+    catalog = load_catalog(config["benchmark"])
+    cases, _ = load_cases(config["benchmark"], catalog, config.get("limit_tasks"), config.get("seed", 0))
+    by_id = {c.id: c for c in cases}
+    rows = [json.loads(l) for l in (out / "cases.jsonl").read_text().splitlines()]
+    todo = [(i, r) for i, r in enumerate(rows) if r.get("error")]
+    print(f"[{out.name}] retrying {len(todo)} errored decisions", flush=True)
+    routers = {}
+    for spec in config["routers"]:
+        r = make_router(spec)
+        routers[r.name] = r
+    sem = asyncio.Semaphore(args.concurrency)
+
+    async def one(i, row):
+        async with sem:
+            rows[i] = await run_case(routers[row["router"]], by_id[row["case"]], catalog, config["ks"],
+                                     config.get("adaptive"))
+
+    try:
+        await asyncio.gather(*(one(i, r) for i, r in todo))
+    finally:
+        await close_all(list(routers.values()))
+    (out / "cases.jsonl").write_text("".join(json.dumps(r, default=str) + "\n" for r in rows))
+    mode = cases[0].mode if cases else "step"
+    by_router: dict[str, list[dict]] = {}
+    for r in rows:
+        by_router.setdefault(r["router"], []).append(r)
+    summary = {**config, "finished": time.time(),
+               "routers": {n: summarize(rs, config["ks"], mode) for n, rs in by_router.items()}}
+    (out / "summary.json").write_text(json.dumps(summary, indent=1))
+    for n, s in summary["routers"].items():
+        print(f"  = {n}: errors={s.get('errors')} hit@5={s.get('hit@5', float('nan')):.3f}", flush=True)
+    return out
+
+
 async def main_async(args) -> Path:
     catalog = load_catalog(args.benchmark)
     cases, stats = load_cases(args.benchmark, catalog, args.limit_tasks, args.seed)
@@ -106,7 +144,8 @@ async def main_async(args) -> Path:
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--benchmark", choices=BENCHMARKS, required=True)
+    ap.add_argument("--benchmark", choices=BENCHMARKS)
+    ap.add_argument("--retry-errors", metavar="RUN_ID", help="re-run only the errored decisions of a run")
     ap.add_argument("--routers", default="jev,decision:openai/gpt-6-luna")
     ap.add_argument("--ks", default="1,5,10")
     ap.add_argument("--adaptive", type=float, default=0.9, help="probability mass for adaptive-k (0 disables)")
@@ -116,8 +155,10 @@ def main(argv=None):
     ap.add_argument("--run-id")
     args = ap.parse_args(argv)
     args.adaptive = args.adaptive or None
+    if not args.benchmark and not args.retry_errors:
+        ap.error("--benchmark or --retry-errors is required")
     try:
-        asyncio.run(main_async(args))
+        asyncio.run(retry_errors(args) if args.retry_errors else main_async(args))
     except Exception:
         traceback.print_exc()
         sys.exit(1)

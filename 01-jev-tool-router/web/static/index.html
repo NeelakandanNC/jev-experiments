@@ -101,7 +101,7 @@ function result(r) {
   return `${mock ? '<div><span class="mock">MOCK — not real results</span></div>' : ''}
     <table class="grid2"><tr><th></th>${ks.map(k => `<th>top ${k} tools</th>`).join('')}</tr>${rows}</table>
     <div class="meta"><b>${label}</b>: ${explain}. "tok" = tool definitions the agent loads per turn, vs <b>${num(full)}</b> with every tool loaded.</div>
-    <div class="meta">${num(r.cases)} decisions from ${num(r.tasks)} tasks · ${esc(r.run_id)}</div>`;
+    <div class="meta">${num(r.cases)} decisions from ${num(r.tasks)} tasks · ${esc([...new Set(Object.values(rs).map(v => v.run_id))].join(", "))}</div>`;
 }
 
 async function refresh() {

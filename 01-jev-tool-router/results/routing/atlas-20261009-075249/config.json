@@ -1,0 +1,23 @@
+{
+ "run_id": "atlas-20261009-075249",
+ "benchmark": "atlas",
+ "routers": [
+  "decision:openai/gpt-6-luna"
+ ],
+ "ks": [
+  1,
+  5,
+  10
+ ],
+ "adaptive": 0.9,
+ "limit_tasks": null,
+ "seed": 0,
+ "catalog_tools": 246,
+ "catalog_servers": 33,
+ "catalog_tokens": 43297,
+ "gold_steps": 2421,
+ "skipped_gold_not_in_catalog": 361,
+ "tasks": 495,
+ "cases": 2060,
+ "started": 1791512602.14165
+}
