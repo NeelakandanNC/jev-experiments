@@ -139,8 +139,14 @@ async def main_async(a) -> None:
         shutil.rmtree(OUT)
     stats = {"synth": 0, "miniwob": 0, "boxes": 0, "errors": []}
     n_val = max(1, int(a.synth * a.val_frac))
-    await render_synth(list(range(a.synth - n_val)), "train", a.workers, stats)
-    await render_synth(list(range(1_000_000, 1_000_000 + n_val)), "val", a.workers, stats)
+    if a.only == "miniwob":  # relabel MiniWoB pages only (e.g. after a label.js change); synthetic pages stay
+        for f in list(OUT.glob("images/*/mw_*")) + list(OUT.glob("labels/*/mw_*")):
+            f.unlink()
+        for f in OUT.glob("labels/*.cache"):
+            f.unlink()
+    else:
+        await render_synth(list(range(a.synth - n_val)), "train", a.workers, stats)
+        await render_synth(list(range(1_000_000, 1_000_000 + n_val)), "val", a.workers, stats)
     mw_tasks = detector_train_tasks()
     seeds = list(range(a.miniwob_seeds))
     n_mw_val = max(1, int(len(seeds) * a.val_frac))
@@ -175,6 +181,7 @@ def main():
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--clean", action="store_true")
     ap.add_argument("--out", default=str(OUT))
+    ap.add_argument("--only", choices=["miniwob"], help="re-render only these pages")
     asyncio.run(main_async(ap.parse_args()))
 
 
