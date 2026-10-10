@@ -1,0 +1,50 @@
+{
+ "tasks": [
+  "click-button",
+  "click-button-sequence",
+  "click-checkboxes",
+  "click-checkboxes-soft",
+  "click-collapsible",
+  "click-collapsible-2",
+  "click-dialog",
+  "click-dialog-2",
+  "click-link",
+  "click-option",
+  "click-scroll-list",
+  "click-tab",
+  "click-tab-2",
+  "click-test-2",
+  "click-widget",
+  "enter-password",
+  "enter-text",
+  "enter-text-dynamic",
+  "focus-text-2",
+  "login-user",
+  "choose-list",
+  "navigate-tree",
+  "search-engine",
+  "social-media",
+  "multi-layouts"
+ ],
+ "variants": [
+  "yolo+luna",
+  "yolo+llm",
+  "yolo+som",
+  "dom+luna"
+ ],
+ "episodes": 10,
+ "seed0": 0,
+ "planner": "gpt-6-luna",
+ "max_steps": 12,
+ "min_confidence": 0.0,
+ "scale": 3.0,
+ "mock": false,
+ "git": "81961b5",
+ "started": "2026-10-09 16:24:08",
+ "notes": [
+  "Run on the agent code of commit 77aa753's parent series (before the multi-select / unquoted-word click fixes).",
+  "click-scroll-list rows were re-run after the first multi-select fix (select adds to the selection); still 50% for every variant.",
+  "Later fixes (plain click on a list box lands on the option it names; the planner is told a list is multi-select) took click-scroll-list to 9/10 in a 10-episode yolo+luna check, not part of this table.",
+  "social-media: its reply / retweet / like / more icons are 14 px CSS images that only look clickable on hover; neither the YOLO detector nor the DOM labeller finds them (0% for every variant)."
+ ]
+}

@@ -45,16 +45,65 @@ What it gets right, and where it falls short:
 - **Image size:** `auto` uses 640 px for phone and MiniWoB-sized screenshots (upscaling them to 960 costs 7 points of mAP50) and 960 px for desktop-sized ones (+1.2 points mAP50 on val).
 - **Training length:** the curve is still rising at epoch 23. The GPU notebook (40 epochs at 960 px) should do better on small elements.
 
-### Jev vs gpt-6-luna: not run yet
+### MiniWoB++ end-to-end: gpt-6-luna plans, the detector finds, a picker clicks
 
-The ScreenSpot-v2 and MiniWoB++ comparisons need the OpenAI, OpenRouter and Hugging Face APIs, and the container this was built in had no access to them. Everything is wired and tested offline (`SCREENJEV_MOCK=1`). With keys in `.env`:
+25 tasks × 10 seeds per variant in a real Chromium, 1,000 episodes. The planner is gpt-6-luna in every variant. Success means the task's own reward is positive. Run: `results/miniwob/openai-v1`.
+
+| Who picks the element | Boxes from | Solved | Steps / episode | Picker latency |
+|---|---|---|---|---|
+| gpt-6-luna **decision model** (Decisions API) | our YOLO + OCR | **92.4%** | 2.8 | **0.20 s** |
+| gpt-6-luna chat, names an element id | our YOLO + OCR | 92.8% | 2.7 | 1.45 s |
+| gpt-6-luna decision model | the page's DOM (perfect boxes) | 92.0% | 2.8 | 0.20 s |
+| the planner itself, on numbered boxes (Set-of-Mark) | our YOLO + OCR | 90.0% | 2.9 | in the planner call |
+
+![MiniWoB success](results/report/miniwob_success.png)
+
+- **The split works end to end.** The planner describes each step in words, YOLO finds the elements, and the decision model picks one. That solves 92% of episodes, the same as letting a chat LLM pick and 2 points better than one LLM doing everything (Set-of-Mark). The pick takes 0.2 s instead of 1.45 s.
+- **Our detector costs nothing here.** The DOM's perfect boxes do no better (92.0% vs 92.4%).
+- **23 of the 25 tasks** are at 90–100% with either picker on YOLO boxes ([per task](results/report/REPORT.md)). Set-of-Mark drops on click-tab-2 (60%) and click-collapsible-2 (70%). Two tasks fail for every variant:
+  - **social-media is 0% for every variant, DOM boxes included.** Its reply / retweet / like / ⋯ icons are 14 px CSS images that only look clickable on hover, and neither the detector nor the DOM labeller finds them.
+  - **click-scroll-list is 50%.** In multi-select lists, clicks used to replace the selection, and a click on a named option landed in the middle of the list box. Both are fixed since this run (9/10 in a 10-episode re-check, not in the table).
+
+### ScreenSpot-v2 grounding: can the picker hit the target in one shot?
+
+ScreenSpot-v2 has 1,272 instructions ("close this window", "view battery usage") on iOS, Android, macOS, Windows and web screenshots. A hit means the click lands inside the target box. Run: `results/screenspot/openai-full`.
+
+The OpenAI account ran out of credits during this run. 2,310 of the 8,904 calls failed with `429 no credits remaining`, mostly the web screenshots, which come last. Those rows are **left out, not counted as misses**, leaving ~950 answered instructions per variant: ~450 mobile, ~305 desktop, ~200 web. `python -m bench.screenspot --run openai-full --retry-errors` re-runs only those rows.
+
+| Variant | Accuracy | Text targets | Icon targets | Detector ceiling | ECE | Acc. on most-confident half | p50 latency |
+|---|---|---|---|---|---|---|---|
+| gpt-6-luna clicks x, y (no detector) | **96.7%** | 96–99% | 89–97% | — | **0.008** | 99.4% | 1.8 s |
+| OmniParser + description → gpt-6-luna decision | 80.8% | 93–96% | 55–65% | 96% | 0.038 | 95.7% | 0.6 s |
+| our YOLO + description → gpt-6-luna chat | 77.5% | 94–98% | 46–62% | 83% | 0.099 | 95.7% | 1.4 s |
+| our YOLO + description → gpt-6-luna decision | 74.3% | 94–97% | 39–48% | 83% | 0.090 | 94.3% | **0.18 s** |
+| our YOLO → gpt-6-luna chat | 72.7% | 94–95% | 37–49% | 83% | 0.131 | 93.7% | 1.9 s |
+| OmniParser → gpt-6-luna decision | 68.4% | 86–91% | 40–41% | 96% | 0.049 | 92.6% | 0.34 s |
+| our YOLO → gpt-6-luna decision | 67.0% | 92–93% | 28–38% | 83% | 0.069 | 92.6% | 0.35 s |
+
+"+ description" (the `@desc` variants) is how the agent works: gpt-6-luna looks at the screenshot and describes the target in words (no coordinates), then the picker grounds that description. Without it, the picker only gets the raw instruction. Per-platform numbers, ECE and tokens are in [REPORT.md](results/report/REPORT.md).
+
+![ScreenSpot accuracy](results/report/screenspot_accuracy.png)
+
+![Calibration](results/report/screenspot_calibration.png)
+
+What it says:
+- **gpt-6-luna is a strong grounding model on its own.** Clicking coordinates directly, it hits 96.7%, and its confidence is almost perfectly calibrated (ECE 0.008).
+- **On text targets, our YOLO pipeline matches it** at 92–98%, and the decision model answers in 0.18–0.35 s against 1.8 s. That's why MiniWoB, which is mostly text widgets, is at 92%.
+- **Icons are the gap.** The picker reads elements as text ("icon next to 'Downloads' at top-right"), so unlabelled glyphs (⋯, ⚙, ↗) are guesswork. Two things help:
+  - The description step: +7 points for YOLO and +12 for OmniParser.
+  - A detector that covers more icons: OmniParser's ceiling is 96% vs our 83%. Ours is trained only on synthetic and MiniWoB pages.
+- **Calibration makes abstaining useful.** Acting only on the most confident half of picks gives 93–96% accuracy for every detector pipeline. The decision model's confidence is better calibrated than the chat model's self-reported confidence (ECE 0.04–0.09 vs 0.10–0.13), so a confidence threshold (`--min-confidence`) is meaningful.
+- **Cost:** a decision call reads ~900–1,100 tokens of element list. A description adds a ~1,800-token screenshot call, and an x, y answer is a ~1,650-token screenshot call. In the agent, the planner already sees the screenshot every step, so the description comes free and only the 0.2 s pick is added.
+
+### Next: Jev
+
+Jev hasn't run yet; it needs an OpenRouter key, `openrouter.ai` in the network allowlist, and `SCREENJEV_JEV_VIA=openrouter`. The runs above are built to take it as extra variants. ScreenSpot reuses the saved gpt-6-luna descriptions, so Jev grounds exactly the same text:
 
 ```bash
-python -m bench.screenspot --variants yolo+jev,yolo+luna,yolo+llm,omniparser+jev,omniparser+luna,llm-coords
-python -m bench.miniwob --variants yolo+jev,yolo+luna,yolo+llm,yolo+som,dom+jev --episodes 10
-python -m bench.report      # tables + charts into results/report/
+python -m bench.screenspot --run openai-full --variants yolo+jev,yolo+jev@desc,omniparser+jev,omniparser+jev@desc
+python -m bench.miniwob    --run openai-v1  --variants yolo+jev,dom+jev --episodes 10
+python -m bench.report --screenspot openai-full --miniwob openai-v1
 ```
-
 
 ## The detector
 
@@ -114,7 +163,7 @@ cp .env.example .env            # OPENAI_API_KEY; OPENROUTER_API_KEY + SCREENJEV
 .venv/bin/python -m screenjev --device android --serial emulator-5554 --task "Turn on airplane mode"
 ```
 
-Options: `--planner` (any OpenAI model, or `provider/model` via the gateway), `--selector jev|luna|llm|som|decision:<model>`, `--detector yolo|omniparser|dom`, `--min-confidence 0.3` (below it, report "not found" to the planner instead of clicking). Every run writes `runs/<time>/index.html`: each step's screenshot with the detected boxes, the pick, the top candidates' probabilities and the outcome.
+Options: `--planner` (any OpenAI model, or `provider/model` via the gateway), `--selector jev|luna|llm|som|decision:<model>` (default `jev`; with only an OpenAI key use `luna`), `--detector yolo|omniparser|dom`, `--min-confidence 0.3` (below it, report "not found" to the planner instead of clicking). Every run writes `runs/<time>/index.html`: each step's screenshot with the detected boxes, the pick, the top candidates' probabilities and the outcome.
 
 Desktop control moves your real mouse (slam it into a screen corner to abort, pyautogui's failsafe). Android needs `adb` with USB debugging on.
 

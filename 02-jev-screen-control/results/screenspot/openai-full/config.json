@@ -15,5 +15,9 @@
  "mock": false,
  "dataset": "HongxinLi/ScreenSpot_v2",
  "git": "9aad7b5",
- "started": "2026-10-09 15:04:32"
+ "started": "2026-10-09 15:04:32",
+ "notes": [
+  "The OpenAI account ran out of credits during the run: 2,310 of 8,904 rows got 'no credits remaining' (429), mostly the web screenshots, which come last. Those rows are excluded from accuracy (reported as api_failed_excluded), not counted as misses; `--retry-errors` re-runs only them.",
+  "Clicks use the click logic of the time (quoted words inside multi-word elements); `--rescore openai-full` recomputes them with the current logic without API calls."
+ ]
 }
