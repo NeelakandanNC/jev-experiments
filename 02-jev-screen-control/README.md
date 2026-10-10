@@ -58,7 +58,7 @@ What it gets right, and where it falls short:
 
 ![MiniWoB success](results/report/miniwob_success.png)
 
-- **The split works end to end.** The planner describes each step in words, YOLO finds the elements, and the decision model picks one. That solves 92% of episodes, the same as letting a chat LLM pick and 2 points better than one LLM doing everything (Set-of-Mark). The pick takes 0.2 s instead of 1.45 s.
+- **The split works end to end.** The planner describes each step in words, YOLO finds the elements, and the decision model picks one. That solves 92% of episodes, the same as letting a chat LLM pick and 2 points better than one LLM doing everything (Set-of-Mark). The pick takes 0.2 s instead of 1.45 s. The pick is one part of a step: a full step, including the planner's screenshot call, takes ~5–6 s.
 - **Our detector costs nothing here.** The DOM's perfect boxes do no better (92.0% vs 92.4%).
 - **23 of the 25 tasks** are at 90–100% with either picker on YOLO boxes ([per task](results/report/REPORT.md)). Set-of-Mark drops on click-tab-2 (60%) and click-collapsible-2 (70%). Two tasks fail for every variant:
   - **social-media is 0% for every variant, DOM boxes included.** Its reply / retweet / like / ⋯ icons are 14 px CSS images that only look clickable on hover, and neither the detector nor the DOM labeller finds them.
@@ -88,11 +88,21 @@ The OpenAI account ran out of credits during this run. 2,310 of the 8,904 calls 
 
 What it says:
 - **gpt-6-luna is a strong grounding model on its own.** Clicking coordinates directly, it hits 96.7%, and its confidence is almost perfectly calibrated (ECE 0.008).
-- **On text targets, our YOLO pipeline matches it** at 92–98%, and the decision model answers in 0.18–0.35 s against 1.8 s. That's why MiniWoB, which is mostly text widgets, is at 92%.
+- **On text targets, our YOLO pipeline matches it** at 92–98%. That's why MiniWoB, which is mostly text widgets, is at 92%.
 - **Icons are the gap.** The picker reads elements as text ("icon next to 'Downloads' at top-right"), so unlabelled glyphs (⋯, ⚙, ↗) are guesswork. Two things help:
   - The description step: +7 points for YOLO and +12 for OmniParser.
   - A detector that covers more icons: OmniParser's ceiling is 96% vs our 83%. Ours is trained only on synthetic and MiniWoB pages.
 - **Calibration makes abstaining useful.** Acting only on the most confident half of picks gives 93–96% accuracy for every detector pipeline. The decision model's confidence is better calibrated than the chat model's self-reported confidence (ECE 0.04–0.09 vs 0.10–0.13), so a confidence threshold (`--min-confidence`) is meaningful.
+- **Speed: the latency column is the pick alone, not the pipeline.** Medians per screenshot, on a 4-core CPU with no GPU:
+
+  | Stage | Time |
+  |---|---|
+  | YOLO detection (ours) / OmniParser | 0.07 s / 0.69 s |
+  | OCR (RapidOCR on CPU) | 1.49 s |
+  | Description (gpt-6-luna reads the screenshot) | 2.14 s |
+  | Pick: decision model / chat model | 0.18 s / 1.40 s |
+
+  End to end, our YOLO + description + decision takes ~3.9 s, ~1.7 s without the description, against 1.8 s for gpt-6-luna clicking x, y. So for one-shot grounding the pipeline isn't faster, and OCR is the slow part. In the agent, the planner already reads the screenshot every step, so the description comes free. The pipeline then adds detection + OCR (~0.35 s on MiniWoB-sized screens) and the pick (0.17 s with the decision model vs 1.26 s with the chat model).
 - **Cost:** a decision call reads ~900–1,100 tokens of element list. A description adds a ~1,800-token screenshot call, and an x, y answer is a ~1,650-token screenshot call. In the agent, the planner already sees the screenshot every step, so the description comes free and only the 0.2 s pick is added.
 
 ### Next: Jev
