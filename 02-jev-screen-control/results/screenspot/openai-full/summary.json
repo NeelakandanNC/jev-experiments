@@ -45,6 +45,36 @@
    "tokens_per_case": 1158.4737406216507,
    "latency_p50_s": 0.5987139630001366
   },
+  "omniparser+onejev": {
+   "n": 100,
+   "accuracy": 0.59,
+   "reachable": 0.92,
+   "ece": 0.10518037142623529,
+   "mean_confidence": 0.6337739447854839,
+   "acc_at_50pct_coverage": 0.82,
+   "acc_at_80pct_coverage": 0.675,
+   "errors": 0,
+   "api_failed_excluded": 0,
+   "cost_per_1k": 0.0,
+   "describe_tokens_per_case": 0.0,
+   "tokens_per_case": 1338.27,
+   "latency_p50_s": 28.225199018999774
+  },
+  "omniparser+onejev@desc": {
+   "n": 100,
+   "accuracy": 0.65,
+   "reachable": 0.92,
+   "ece": 0.11058220102771094,
+   "mean_confidence": 0.7605822010277109,
+   "acc_at_50pct_coverage": 0.92,
+   "acc_at_80pct_coverage": 0.7875,
+   "errors": 0,
+   "api_failed_excluded": 0,
+   "cost_per_1k": 0.0,
+   "describe_tokens_per_case": 1653.5,
+   "tokens_per_case": 1382.15,
+   "latency_p50_s": 14.776895916000285
+  },
   "omniparser+prism": {
    "n": 917,
    "accuracy": 0.504907306434024,
@@ -135,6 +165,51 @@
    "tokens_per_case": 956.2236559139785,
    "latency_p50_s": 0.18429829200067616
   },
+  "yolo+onejev": {
+   "n": 100,
+   "accuracy": 0.62,
+   "reachable": 0.84,
+   "ece": 0.059882275119150175,
+   "mean_confidence": 0.6679590572111828,
+   "acc_at_50pct_coverage": 0.84,
+   "acc_at_80pct_coverage": 0.7125,
+   "errors": 0,
+   "api_failed_excluded": 0,
+   "cost_per_1k": 0.0,
+   "describe_tokens_per_case": 0.0,
+   "tokens_per_case": 1096.52,
+   "latency_p50_s": 14.931617807999828
+  },
+  "yolo+onejev-vis@desc": {
+   "n": 100,
+   "accuracy": 0.68,
+   "reachable": 0.84,
+   "ece": 0.12460673055728037,
+   "mean_confidence": 0.7916729921875472,
+   "acc_at_50pct_coverage": 0.96,
+   "acc_at_80pct_coverage": 0.8125,
+   "errors": 0,
+   "api_failed_excluded": 0,
+   "cost_per_1k": 0.0,
+   "describe_tokens_per_case": 1653.5,
+   "tokens_per_case": 2074.81,
+   "latency_p50_s": 27.704058154999984
+  },
+  "yolo+onejev@desc": {
+   "n": 100,
+   "accuracy": 0.71,
+   "reachable": 0.84,
+   "ece": 0.09253782277247018,
+   "mean_confidence": 0.8025378227724701,
+   "acc_at_50pct_coverage": 0.96,
+   "acc_at_80pct_coverage": 0.8375,
+   "errors": 0,
+   "api_failed_excluded": 0,
+   "cost_per_1k": 0.0,
+   "describe_tokens_per_case": 1653.5,
+   "tokens_per_case": 1140.4,
+   "latency_p50_s": 12.572406905000207
+  },
   "yolo+prism": {
    "n": 917,
    "accuracy": 0.5354416575790621,
@@ -191,6 +266,22 @@
    "web/icon": 0.547945205479452,
    "web/text": 0.9428571428571428
   },
+  "omniparser+onejev": {
+   "desktop/icon": 0.08333333333333333,
+   "desktop/text": 0.8333333333333334,
+   "mobile/icon": 0.15789473684210525,
+   "mobile/text": 0.8648648648648649,
+   "web/icon": 0.16666666666666666,
+   "web/text": 0.875
+  },
+  "omniparser+onejev@desc": {
+   "desktop/icon": 0.16666666666666666,
+   "desktop/text": 0.7777777777777778,
+   "mobile/icon": 0.3684210526315789,
+   "mobile/text": 0.8648648648648649,
+   "web/icon": 0.3333333333333333,
+   "web/text": 1.0
+  },
   "omniparser+prism": {
    "desktop/icon": 0.21428571428571427,
    "desktop/text": 0.7888888888888889,
@@ -238,6 +329,30 @@
    "mobile/text": 0.9767441860465116,
    "web/icon": 0.4722222222222222,
    "web/text": 0.970873786407767
+  },
+  "yolo+onejev": {
+   "desktop/icon": 0.0,
+   "desktop/text": 0.8888888888888888,
+   "mobile/icon": 0.3157894736842105,
+   "mobile/text": 0.8648648648648649,
+   "web/icon": 0.16666666666666666,
+   "web/text": 0.875
+  },
+  "yolo+onejev-vis@desc": {
+   "desktop/icon": 0.08333333333333333,
+   "desktop/text": 0.8888888888888888,
+   "mobile/icon": 0.3157894736842105,
+   "mobile/text": 0.918918918918919,
+   "web/icon": 0.5,
+   "web/text": 1.0
+  },
+  "yolo+onejev@desc": {
+   "desktop/icon": 0.16666666666666666,
+   "desktop/text": 0.9444444444444444,
+   "mobile/icon": 0.3684210526315789,
+   "mobile/text": 0.9459459459459459,
+   "web/icon": 0.3333333333333333,
+   "web/text": 1.0
   },
   "yolo+prism": {
    "desktop/icon": 0.25396825396825395,
