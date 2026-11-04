@@ -71,6 +71,25 @@
    "dataset": "HongxinLi/ScreenSpot_v2",
    "git": "b733a01",
    "started": "2026-11-04 11:15:38"
+  },
+  {
+   "variants": [
+    "yolo+onejev",
+    "yolo+onejev@desc",
+    "omniparser+onejev",
+    "omniparser+onejev@desc",
+    "yolo+onejev-vis@desc"
+   ],
+   "same_cases_as": "yolo+luna,yolo+luna@desc,omniparser+luna,omniparser+luna@desc",
+   "sample": 100,
+   "allow_none": false,
+   "limit_per_domain": null,
+   "domains": null,
+   "llm": "gpt-6-luna",
+   "mock": false,
+   "dataset": "HongxinLi/ScreenSpot_v2",
+   "git": "5a3a8d3",
+   "started": "2026-11-04 11:47:29"
   }
  ]
 }
