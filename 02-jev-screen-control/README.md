@@ -125,6 +125,34 @@ What it says:
 
 Full table with ECE and confident-half accuracy: [results/report/SAME_CASES.md](results/report/SAME_CASES.md). Prism's MiniWoB run still needs OpenAI credit, because gpt-6-luna is the planner.
 
+### OneJev1.6-0.8B, run locally on this machine's CPU (100 ScreenSpot instructions)
+
+[OneJev1.6-0.8B](https://huggingface.co/OmniJev/OneJev1.6-0.8B) is OmniJev's open 0.8B decision model (a Qwen3.5-0.8B fine-tune, Apache-2.0). It is **multimodal**, so it can look at the screenshot itself.
+
+**How it was run.** OmniJev serve it with Flide, whose kernels are GPU-only, so it ran here with plain `transformers` on 4 CPU cores ([`screenjev/onejev_local.py`](screenjev/onejev_local.py)):
+- **Prompt:** built with Flide's own OneJev code (`onejev-labels-v2`, `debias=1`), so it is the text Flide would send.
+- **Readout:** the option letters' probabilities at the last token, as Flide reads them. The checkpoint has no calibration file, so the temperature is 1.
+- **Pickers:** `--selector onejev` for text only, and `onejev-vis` to also pass the screenshot. For CPU speed the screenshot is capped at 1 megapixel; Flide would send it at full size.
+
+**What it was scored on.** At 5–28 s per pick on CPU, it ran on a fixed random **100** of the 917 instructions. Every other model below is scored on the same 100.
+
+| Picker ↓ / elements → | our YOLO | our YOLO + description | OmniParser | OmniParser + description | Pick time |
+|---|---|---|---|---|---|
+| gpt-6-luna decision model | 72% | 78% | 70% | **85%** | 0.2–0.6 s |
+| **OneJev1.6-0.8B** (text only) | **62%** | **71%** | **59%** | **65%** | 13–28 s (CPU) |
+| **OneJev1.6-0.8B, also sees the screenshot** | | **68%** | | | 28 s (CPU) |
+| Sarvam Prism | 52% | 69% | 50% | 71% | 0.4 s |
+| gpt-6-luna chat, names an id | 76% | 81% | — | — | 1.5–1.8 s |
+| *gpt-6-luna clicks x, y (no detector)* | | | | | *96%, 1.7 s* |
+
+- **OneJev sits between Prism and gpt-6-luna's decision model.** On YOLO elements with a description it scores 71%, against 69% for Prism and 78% for gpt-6-luna, and it beats Prism by about 10 points without a description. That's at 0.8B parameters, on a CPU, for free.
+- **Text targets are close to the best** (95% with a description vs 97% for gpt-6-luna). **Icons are its weak spot** (14–30% vs 41–68% for gpt-6-luna).
+- **Seeing the screenshot did not help here** (68% vs 71%, within noise for 100 cases). It may be the 1 MP cap, or the element list carrying most of the signal; a GPU run with full-size screenshots would settle it.
+- **Calibration** is reasonable (ECE 0.06–0.13), in the range of gpt-6-luna's decision model.
+- **Caveats:** 100 instructions (only 37 icon targets) means ±5–9 points of noise. Speed is CPU-only: on a GPU with Flide, a pick should take well under a second.
+
+Full table: [results/report/SAME_CASES_100.md](results/report/SAME_CASES_100.md).
+
 ### Next: Jev
 
 Jev hasn't run yet; it needs an OpenRouter key, `openrouter.ai` in the network allowlist, and `SCREENJEV_JEV_VIA=openrouter`. The runs above are built to take it as extra variants. ScreenSpot reuses the saved gpt-6-luna descriptions, so Jev grounds exactly the same text:

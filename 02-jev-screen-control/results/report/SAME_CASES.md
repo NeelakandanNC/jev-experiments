@@ -3,6 +3,11 @@ Same 917 ScreenSpot-v2 instructions for every variant (those all of yolo+luna,yo
 | Variant | n | Accuracy | Text targets | Icon targets | ECE | Acc. on most-confident half | Pick latency (p50) |
 |---|---|---|---|---|---|---|---|
 | gpt-6-luna clicks x, y (no detector) | 914 | **96.7%** | 97.7% | 95.3% | 0.008 | 99.3% | 1.81 s |
+| our YOLO + description → OneJev1.6-0.8B sees the screenshot | 100 | **68.0%** | 92.1% | 27.0% | 0.125 | 96.0% | 27.70 s |
+| OmniParser + description → OneJev1.6-0.8B (local) | 100 | **65.0%** | 85.7% | 29.7% | 0.111 | 92.0% | 14.75 s |
+| our YOLO + description → OneJev1.6-0.8B (local) | 100 | **71.0%** | 95.2% | 29.7% | 0.093 | 96.0% | 12.56 s |
+| OmniParser → OneJev1.6-0.8B (local) | 100 | **59.0%** | 85.7% | 13.5% | 0.105 | 82.0% | 28.19 s |
+| our YOLO → OneJev1.6-0.8B (local) | 100 | **62.0%** | 87.3% | 18.9% | 0.060 | 84.0% | 14.90 s |
 | OmniParser + description → Sarvam Prism decision | 917 | **68.7%** | 89.5% | 40.0% | 0.206 | 92.6% | 0.41 s |
 | OmniParser + description → gpt-6-luna decision | 917 | **80.7%** | 94.4% | 61.8% | 0.038 | 95.4% | 0.60 s |
 | our YOLO + description → Sarvam Prism decision | 917 | **68.9%** | 91.5% | 37.7% | 0.085 | 86.5% | 0.40 s |
