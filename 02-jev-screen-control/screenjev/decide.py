@@ -145,7 +145,12 @@ class DecisionClient:
         self._client = None
         self.limiter = None
         self.via = "mock" if self.mock else None
-        if not self.mock:
+        if not self.mock and model.lower().startswith("omnijev/"):
+            # OneJev runs in-process (screenjev/onejev_local.py): no key, no network, $0
+            from .onejev_local import MODEL_ID, OneJevLocalClient
+            self.via, self.wire_model = "local", model
+            self._client = OneJevLocalClient(MODEL_ID if model.lower() == MODEL_ID.lower() else model)
+        elif not self.mock:
             url, key_var, self.wire_model = backend(model)
             self.via = url
             self.limiter = _limiter(url)
@@ -168,7 +173,7 @@ class DecisionClient:
         if self.limiter:
             await self.limiter.acquire(estimate_tokens(input, questions))
         t0 = time.perf_counter()
-        if isinstance(self._client, _NativeClient):
+        if hasattr(self._client, "engine") or isinstance(self._client, _NativeClient):
             body = await self._client.decide(self.wire_model, input, questions)
         else:
             resp = await self._client.decisions.with_raw_response.create(model=self.wire_model, input=input,

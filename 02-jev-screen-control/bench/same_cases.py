@@ -16,7 +16,8 @@ from .common import RESULTS, ece, pct, read_jsonl
 from .report import nice
 from .screenspot import _api_error, selective
 
-ORDER = ["llm-coords", "omniparser+prism@desc", "omniparser+luna@desc", "yolo+prism@desc", "yolo+llm@desc",
+ORDER = ["llm-coords", "yolo+onejev-vis@desc", "omniparser+onejev@desc", "yolo+onejev@desc", "omniparser+onejev", "yolo+onejev",
+         "omniparser+prism@desc", "omniparser+luna@desc", "yolo+prism@desc", "yolo+llm@desc",
          "yolo+luna@desc", "omniparser+prism", "yolo+prism", "yolo+llm", "omniparser+luna", "yolo+luna"]
 
 

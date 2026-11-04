@@ -57,7 +57,8 @@ def step_input(task: str, step: Step, screen: Screen) -> str:
 class DecisionSelector:
     def __init__(self, model: str = "typesafe-ai/jev"):
         self.model = model
-        self.name = {"typesafe-ai/jev": "jev", "sarvam/sarvam-prism": "prism"}.get(model, model.split("/")[-1])
+        self.name = {"typesafe-ai/jev": "jev", "sarvam/sarvam-prism": "prism",
+                     "OmniJev/OneJev1.6-0.8B": "onejev"}.get(model, model.split("/")[-1])
         self.client = DecisionClient(model)
 
     async def select(self, task: str, step: Step, screen: Screen, allow_none: bool = True) -> Selection:
@@ -88,6 +89,39 @@ class DecisionSelector:
 LLM_SYSTEM = """You ground UI actions. Given an action and the list of elements detected on the screen, return the
 id of the element to act on, or "none" if no element fits. Also give your confidence (0 to 1) that the
 chosen id is correct. Reply with JSON only: {"element": "<id or none>", "confidence": <0..1>}"""
+
+
+class OneJevVisionSelector:
+    """OneJev with the screenshot: the same question and element list as DecisionSelector, plus the image in the state
+    (OneJev is multimodal). Runs locally (screenjev/onejev_local.py)."""
+    wants_image = True
+
+    def __init__(self):
+        from .onejev_local import OneJevLocal
+        self.name = "onejev-vis"
+        self.model = "OmniJev/OneJev1.6-0.8B+image"
+        self.engine = OneJevLocal.get()
+
+    async def select(self, task: str, step: Step, screen: Screen, allow_none: bool = True, image=None) -> Selection:
+        import asyncio
+        import time
+        if image is None:
+            return Selection(None, None, model=self.model, error="no screenshot given")
+        if not screen.elements:
+            return Selection(None, None, model=self.model, error="no elements detected")
+        criteria = {e.id: e.describe(screen.width, screen.height) for e in screen.elements}
+        if allow_none or len(criteria) < 2:
+            criteria[NONE] = NONE_DESC
+        state = step_input(task, step, screen) + "\nScreenshot: <image:1>"
+        t0 = time.perf_counter()
+        probs, tokens = await asyncio.to_thread(self.engine.choice_with_image, state, image, criteria, INSTRUCTIONS)
+        ranked = sorted(probs.items(), key=lambda kv: -kv[1])
+        best, p = ranked[0]
+        return Selection(screen.by_id(best) if best != NONE else None, p, ranked, time.perf_counter() - t0, 0.0,
+                         tokens, self.model)
+
+    async def aclose(self):
+        pass
 
 
 class LLMSelector:
@@ -128,13 +162,17 @@ class SomSelector:
 
 
 def make_selector(spec: str):
-    """jev | luna | prism | decision:<model> | llm[:<model>] | som"""
+    """jev | luna | prism | onejev | decision:<model> | llm[:<model>] | som"""
     if spec == "jev":
         return DecisionSelector("typesafe-ai/jev")
     if spec == "luna":
         return DecisionSelector("openai/gpt-6-luna")
     if spec == "prism":
         return DecisionSelector("sarvam/sarvam-prism")
+    if spec == "onejev-vis":
+        return OneJevVisionSelector()
+    if spec == "onejev":
+        return DecisionSelector("OmniJev/OneJev1.6-0.8B")  # runs locally (screenjev/onejev_local.py)
     if spec.startswith("decision:"):
         return DecisionSelector(spec.split(":", 1)[1])
     if spec == "llm" or spec.startswith("llm:"):

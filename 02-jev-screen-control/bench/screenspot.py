@@ -80,7 +80,7 @@ def inside(pt, box) -> bool:
 async def run(a) -> None:
     out = run_dir("screenspot", a.run)
     variants = a.variants.split(",")
-    cfg = {"variants": variants, "same_cases_as": a.same_cases_as, "allow_none": a.allow_none, "limit_per_domain": a.limit, "domains": a.domains, "llm": a.llm, "mock": is_mock(),
+    cfg = {"variants": variants, "same_cases_as": a.same_cases_as, "sample": a.sample, "allow_none": a.allow_none, "limit_per_domain": a.limit, "domains": a.domains, "llm": a.llm, "mock": is_mock(),
            "dataset": DATASET, "git": git_rev(), "started": time.strftime("%Y-%m-%d %H:%M:%S")}
     cfg_path = out / "config.json"
     if cfg_path.exists():  # adding variants to an existing run: keep its config, log this invocation
@@ -145,7 +145,8 @@ async def run(a) -> None:
         step = Step("click", target=target)
         async with sem:
             try:
-                s = await selectors[spec].select(sample["instruction"], step, screen, allow_none=a.allow_none)
+                kw = {"image": img} if getattr(selectors[spec], "wants_image", False) else {}
+                s = await selectors[spec].select(sample["instruction"], step, screen, allow_none=a.allow_none, **kw)
                 err = s.error
             except Exception as e:
                 s, err = None, f"{type(e).__name__}: {e}"
@@ -184,6 +185,12 @@ async def run(a) -> None:
             ok = {r["idx"] for r in prior if r["variant"] == v and not _api_error(r.get("error") or "")}
             only = ok if only is None else only & ok
         print(f"restricted to {len(only)} instructions answered by {a.same_cases_as}")
+    if a.sample:  # a fixed random subset (seed 0) of the case set, for slow pickers
+        import random
+        pool = sorted(only) if only is not None else list(range(1272))
+        random.Random(0).shuffle(pool)  # shuffle once: a larger --sample extends a smaller one
+        only = set(pool[: a.sample])
+        print(f"sampled {len(only)} instructions (seed 0)")
     pending: set[asyncio.Task] = set()
     for sample, img in load_samples(a.limit, a.domains.split(",") if a.domains else None):
         if only is not None and sample["idx"] not in only:
@@ -322,6 +329,7 @@ def main():
     ap.add_argument("--run", help="results/screenspot/<run> (resumes if it exists)")
     ap.add_argument("--retry-errors", action="store_true", help="re-run rows that failed for API reasons")
     ap.add_argument("--same-cases-as", metavar="VARIANTS", help="only the instructions these variants answered")
+    ap.add_argument("--sample", type=int, help="a fixed random subset (seed 0) of that case set")
     ap.add_argument("--rescore", metavar="RUN", help="recompute clicks/hits of a finished run offline (no API calls)")
     a = ap.parse_args()
     asyncio.run(rescore(a.rescore) if a.rescore else run(a))
