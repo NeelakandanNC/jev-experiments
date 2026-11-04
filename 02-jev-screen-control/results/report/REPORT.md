@@ -27,8 +27,12 @@ Per-class mAP50-95 (val): button 89.6%, link 70.6%, text_input 89.8%, checkbox 7
 | our YOLO + description → gpt-6-luna chat picks id | 926 | **77.5%** | 53.2% | 94.4% | 46.1% | 97.7% | 62.5% | 97.0% | 82.6% | 87.4% | 0.099 | 95.7% | 1403 ms | 2,698 |
 | our YOLO + description → gpt-6-luna decision | 930 | **74.3%** | 48.4% | 94.4% | 38.7% | 97.7% | 47.2% | 97.1% | 82.7% | 87.2% | 0.090 | 94.3% | 184 ms | 2,690 |
 | our YOLO → gpt-6-luna chat picks id | 948 | **72.7%** | 47.6% | 95.0% | 36.6% | 94.6% | 48.8% | 93.7% | 82.8% | 85.8% | 0.131 | 93.7% | 1923 ms | 943 |
+| our YOLO + description → Sarvam Prism decision | 917 | **68.9%** | 42.9% | 90.6% | 37.2% | 93.0% | 29.4% | 89.4% | 82.6% | 62.2% | 0.085 | 86.5% | 401 ms | 2,991 |
+| OmniParser + description → Sarvam Prism decision | 917 | **68.7%** | 46.0% | 90.0% | 39.8% | 89.9% | 29.4% | 87.2% | 95.7% | 48.2% | 0.206 | 92.6% | 412 ms | 3,226 |
 | OmniParser → gpt-6-luna decision | 956 | **68.4%** | 39.7% | 85.6% | 40.8% | 89.5% | 41.2% | 91.4% | 95.9% | 71.7% | 0.049 | 92.6% | 343 ms | 1,079 |
 | our YOLO → gpt-6-luna decision | 955 | **67.0%** | 34.1% | 92.8% | 28.3% | 91.9% | 38.1% | 92.2% | 82.8% | 77.8% | 0.069 | 92.6% | 353 ms | 902 |
+| our YOLO → Sarvam Prism decision | 917 | **53.5%** | 25.4% | 80.0% | 22.0% | 74.4% | 20.6% | 71.3% | 82.6% | 48.1% | 0.062 | 70.5% | 398 ms | 1,207 |
+| OmniParser → Sarvam Prism decision | 917 | **50.5%** | 21.4% | 78.9% | 20.9% | 69.8% | 17.6% | 66.0% | 95.7% | 30.7% | 0.199 | 76.2% | 411 ms | 1,443 |
 
 ![ScreenSpot accuracy](screenspot_accuracy.png)
 

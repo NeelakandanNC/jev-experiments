@@ -105,6 +105,26 @@ What it says:
   End to end, our YOLO + description + decision takes ~3.9 s, ~1.7 s without the description, against 1.8 s for gpt-6-luna clicking x, y. So for one-shot grounding the pipeline isn't faster, and OCR is the slow part. In the agent, the planner already reads the screenshot every step, so the description comes free. The pipeline then adds detection + OCR (~0.35 s on MiniWoB-sized screens) and the pick (0.17 s with the decision model vs 1.26 s with the chat model).
 - **Cost:** a decision call reads ~900–1,100 tokens of element list. A description adds a ~1,800-token screenshot call, and an x, y answer is a ~1,650-token screenshot call. In the agent, the planner already sees the screenshot every step, so the description comes free and only the 0.2 s pick is added.
 
+### Sarvam Prism vs gpt-6-luna's decision model (same 917 ScreenSpot instructions)
+
+[Sarvam Prism](https://docs.sarvam.ai/api/token-factory/models/sarvam-prism) (`--selector prism`) is a text-only decision model built on Sarvam 105B, at ₹4 per 1M input tokens. It gets exactly the same questions and element lists as gpt-6-luna's decision model, and the `@desc` variants ground the same saved gpt-6-luna descriptions. Every variant below is scored on the same 917 instructions: the ones all four gpt-6-luna decision variants answered before the OpenAI credits ran out. Click accuracy:
+
+| Picker ↓ / elements → | our YOLO | our YOLO + description | OmniParser | OmniParser + description | Pick time (p50) |
+|---|---|---|---|---|---|
+| gpt-6-luna decision model | 67.0% | 74.2% | 68.3% | **80.7%** | 0.18–0.60 s |
+| **Sarvam Prism** | 53.5% | 68.8% | 50.5% | 68.6% | 0.40 s |
+| gpt-6-luna chat, names an id | 72.7% | 77.4% | — | — | 1.4–1.9 s |
+| *gpt-6-luna clicks x, y (no detector)* | | | | | *96.7%, 1.8 s* |
+
+- **Prism trails gpt-6-luna's decision model by 5–18 points** on the same element lists. The gap is smallest when a description is given (74.2% vs 68.8% on YOLO elements).
+- **Text targets are close** (91% vs 96% with a description); **icons are where it loses** (38–40% vs 43–62%).
+- **Why:** when the description says "the FaceTime app icon, labeled FaceTime", Prism tends to pick a *textless icon box*, matching the word "icon". gpt-6-luna picks the "FaceTime" text label under the icon, which lies inside the target. That pattern accounts for 30 of the 63 cases where gpt-6-luna was right and Prism wrong.
+- **Confidence:** Prism is less sure of itself (mean 0.62 vs 0.87 on YOLO + description). Its calibration on YOLO elements is about as good (ECE 0.06–0.09 vs 0.07–0.09), but it is overconfident on OmniParser elements (ECE 0.20).
+- **Speed:** 0.4 s per pick from this cloud machine, network included (Sarvam quotes ~60 ms for the model itself).
+- **Cost:** ₹4 per 1M input tokens; this whole run (3,668 picks, 4.9M input tokens) cost about ₹20.
+
+Full table with ECE and confident-half accuracy: [results/report/SAME_CASES.md](results/report/SAME_CASES.md). Prism's MiniWoB run still needs OpenAI credit, because gpt-6-luna is the planner.
+
 ### Next: Jev
 
 Jev hasn't run yet; it needs an OpenRouter key, `openrouter.ai` in the network allowlist, and `SCREENJEV_JEV_VIA=openrouter`. The runs above are built to take it as extra variants. ScreenSpot reuses the saved gpt-6-luna descriptions, so Jev grounds exactly the same text:

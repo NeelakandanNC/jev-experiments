@@ -54,6 +54,23 @@
    "dataset": "HongxinLi/ScreenSpot_v2",
    "git": "9fc897e",
    "started": "2026-11-04 10:20:41"
+  },
+  {
+   "variants": [
+    "yolo+prism",
+    "yolo+prism@desc",
+    "omniparser+prism",
+    "omniparser+prism@desc"
+   ],
+   "same_cases_as": "yolo+luna,yolo+luna@desc,omniparser+luna,omniparser+luna@desc",
+   "allow_none": false,
+   "limit_per_domain": null,
+   "domains": null,
+   "llm": "gpt-6-luna",
+   "mock": false,
+   "dataset": "HongxinLi/ScreenSpot_v2",
+   "git": "b733a01",
+   "started": "2026-11-04 11:15:38"
   }
  ]
 }

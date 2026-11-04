@@ -46,34 +46,34 @@
    "latency_p50_s": 0.5987139630001366
   },
   "omniparser+prism": {
-   "n": 15,
-   "accuracy": 0.4,
-   "reachable": 0.8,
-   "ece": 0.3411344314614932,
-   "mean_confidence": 0.2305683597922325,
-   "acc_at_50pct_coverage": 0.5714285714285714,
-   "acc_at_80pct_coverage": 0.5,
-   "errors": 0,
+   "n": 917,
+   "accuracy": 0.504907306434024,
+   "reachable": 0.9574700109051254,
+   "ece": 0.19871394887696708,
+   "mean_confidence": 0.3067445664068757,
+   "acc_at_50pct_coverage": 0.7620087336244541,
+   "acc_at_80pct_coverage": 0.6038251366120219,
+   "errors": 1,
    "api_failed_excluded": 0,
-   "cost_per_1k": 0.10748484848484849,
+   "cost_per_1k": 0.06557341132150292,
    "describe_tokens_per_case": 0.0,
-   "tokens_per_case": 2364.6666666666665,
-   "latency_p50_s": 0.4937723839999535
+   "tokens_per_case": 1442.6150490730643,
+   "latency_p50_s": 0.41085820500029513
   },
   "omniparser+prism@desc": {
-   "n": 15,
-   "accuracy": 0.4,
-   "reachable": 0.8,
-   "ece": 0.2149607703089714,
-   "mean_confidence": 0.2856115495165189,
-   "acc_at_50pct_coverage": 0.5714285714285714,
-   "acc_at_80pct_coverage": 0.3333333333333333,
-   "errors": 0,
+   "n": 917,
+   "accuracy": 0.6870229007633588,
+   "reachable": 0.9574700109051254,
+   "ece": 0.2063065571913813,
+   "mean_confidence": 0.48166248978290493,
+   "acc_at_50pct_coverage": 0.925764192139738,
+   "acc_at_80pct_coverage": 0.796448087431694,
+   "errors": 1,
    "api_failed_excluded": 0,
-   "cost_per_1k": 0.10970909090909091,
-   "describe_tokens_per_case": 1863.2,
-   "tokens_per_case": 2413.6,
-   "latency_p50_s": 0.4732900729999301
+   "cost_per_1k": 0.06759532070982453,
+   "describe_tokens_per_case": 1739.350054525627,
+   "tokens_per_case": 1487.0970556161396,
+   "latency_p50_s": 0.41246281499979887
   },
   "yolo+llm": {
    "n": 948,
@@ -136,34 +136,34 @@
    "latency_p50_s": 0.18429829200067616
   },
   "yolo+prism": {
-   "n": 15,
-   "accuracy": 0.26666666666666666,
-   "reachable": 0.8,
-   "ece": 0.25301372110843656,
-   "mean_confidence": 0.40468936661879223,
-   "acc_at_50pct_coverage": 0.5714285714285714,
-   "acc_at_80pct_coverage": 0.3333333333333333,
-   "errors": 0,
+   "n": 917,
+   "accuracy": 0.5354416575790621,
+   "reachable": 0.8255179934569248,
+   "ece": 0.06222227097826492,
+   "mean_confidence": 0.48089316901323836,
+   "acc_at_50pct_coverage": 0.7052401746724891,
+   "acc_at_80pct_coverage": 0.6147540983606558,
+   "errors": 1,
    "api_failed_excluded": 0,
-   "cost_per_1k": 0.07788181818181819,
+   "cost_per_1k": 0.054865321701199565,
    "describe_tokens_per_case": 0.0,
-   "tokens_per_case": 1713.4,
-   "latency_p50_s": 0.4545102299999826
+   "tokens_per_case": 1207.0370774263904,
+   "latency_p50_s": 0.3982177530001536
   },
   "yolo+prism@desc": {
-   "n": 15,
-   "accuracy": 0.4,
-   "reachable": 0.8,
-   "ece": 0.20935046871503193,
-   "mean_confidence": 0.4758754432201385,
-   "acc_at_50pct_coverage": 0.42857142857142855,
-   "acc_at_80pct_coverage": 0.4166666666666667,
-   "errors": 0,
+   "n": 917,
+   "accuracy": 0.6892039258451472,
+   "reachable": 0.8255179934569248,
+   "ece": 0.08524122653634789,
+   "mean_confidence": 0.6216337377425104,
+   "acc_at_50pct_coverage": 0.8646288209606987,
+   "acc_at_80pct_coverage": 0.796448087431694,
+   "errors": 1,
    "api_failed_excluded": 0,
-   "cost_per_1k": 0.08010606060606061,
-   "describe_tokens_per_case": 1863.2,
-   "tokens_per_case": 1762.3333333333333,
-   "latency_p50_s": 0.4317816899999798
+   "cost_per_1k": 0.056887231089521165,
+   "describe_tokens_per_case": 1739.350054525627,
+   "tokens_per_case": 1251.5190839694656,
+   "latency_p50_s": 0.40121659599981285
   }
  },
  "by_domain_type": {
@@ -192,20 +192,20 @@
    "web/text": 0.9428571428571428
   },
   "omniparser+prism": {
-   "desktop/icon": 0.5,
-   "desktop/text": 1.0,
-   "mobile/icon": 0.0,
-   "mobile/text": 1.0,
-   "web/icon": 0.0,
-   "web/text": 0.0
+   "desktop/icon": 0.21428571428571427,
+   "desktop/text": 0.7888888888888889,
+   "mobile/icon": 0.2094240837696335,
+   "mobile/text": 0.6976744186046512,
+   "web/icon": 0.17647058823529413,
+   "web/text": 0.6595744680851063
   },
   "omniparser+prism@desc": {
-   "desktop/icon": 0.5,
-   "desktop/text": 1.0,
-   "mobile/icon": 0.6666666666666666,
-   "mobile/text": 0.0,
-   "web/icon": 0.0,
-   "web/text": 0.0
+   "desktop/icon": 0.4603174603174603,
+   "desktop/text": 0.9,
+   "mobile/icon": 0.39790575916230364,
+   "mobile/text": 0.8992248062015504,
+   "web/icon": 0.29411764705882354,
+   "web/text": 0.8723404255319149
   },
   "yolo+llm": {
    "desktop/icon": 0.47619047619047616,
@@ -240,20 +240,20 @@
    "web/text": 0.970873786407767
   },
   "yolo+prism": {
-   "desktop/icon": 0.5,
-   "desktop/text": 1.0,
-   "mobile/icon": 0.0,
-   "mobile/text": 0.0,
-   "web/icon": 0.0,
-   "web/text": 0.0
+   "desktop/icon": 0.25396825396825395,
+   "desktop/text": 0.8,
+   "mobile/icon": 0.2198952879581152,
+   "mobile/text": 0.7441860465116279,
+   "web/icon": 0.20588235294117646,
+   "web/text": 0.7127659574468085
   },
   "yolo+prism@desc": {
-   "desktop/icon": 0.5,
-   "desktop/text": 1.0,
-   "mobile/icon": 0.6666666666666666,
-   "mobile/text": 0.0,
-   "web/icon": 0.0,
-   "web/text": 0.0
+   "desktop/icon": 0.42857142857142855,
+   "desktop/text": 0.9055555555555556,
+   "mobile/icon": 0.3717277486910995,
+   "mobile/text": 0.9302325581395349,
+   "web/icon": 0.29411764705882354,
+   "web/text": 0.8936170212765957
   }
  }
 }

@@ -90,9 +90,9 @@ async def run(a) -> None:
     else:
         cfg_path.write_text(json.dumps(cfg, indent=1))
     path = out / "cases.jsonl"
-    if a.retry_errors:  # drop rows that failed for API reasons (rate limits, credits, network); keep real answers
+    if a.retry_errors:  # drop this run's variants' rows that failed for API reasons, so they run again
         rows = read_jsonl(path)
-        keep = [r for r in rows if not _api_error(r.get("error") or "")]
+        keep = [r for r in rows if not (_api_error(r.get("error") or "") and r["variant"] in variants)]
         path.write_text("".join(json.dumps(r) + "\n" for r in keep))
         print(f"retrying {len(rows) - len(keep)} rows that hit API errors")
     done = {(r["variant"], r["idx"]) for r in read_jsonl(path)}
@@ -218,7 +218,8 @@ async def run(a) -> None:
 
 def _api_error(err: str) -> bool:
     return any(k in err for k in ("RateLimitError", "APIConnectionError", "APITimeoutError", "InternalServerError",
-                                  "Error code: 5", "BadRequestError"))
+                                  "Error code: 5", "BadRequestError", "HTTP 429", "HTTP 5", "ConnectError",
+                                  "ReadTimeout"))
 
 
 async def rescore(run: str) -> None:
