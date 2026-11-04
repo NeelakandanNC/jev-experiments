@@ -19,5 +19,41 @@
  "notes": [
   "The OpenAI account ran out of credits during the run: 2,310 of 8,904 rows got 'no credits remaining' (429), mostly the web screenshots, which come last. Those rows are excluded from accuracy (reported as api_failed_excluded), not counted as misses; `--retry-errors` re-runs only them.",
   "Clicks use the click logic of the time (quoted words inside multi-word elements); `--rescore openai-full` recomputes them with the current logic without API calls."
+ ],
+ "later_runs": [
+  {
+   "variants": [
+    "yolo+prism",
+    "yolo+prism@desc",
+    "omniparser+prism",
+    "omniparser+prism@desc"
+   ],
+   "same_cases_as": "yolo+luna,yolo+luna@desc,omniparser+luna,omniparser+luna@desc",
+   "allow_none": false,
+   "limit_per_domain": 5,
+   "domains": null,
+   "llm": "gpt-6-luna",
+   "mock": false,
+   "dataset": "HongxinLi/ScreenSpot_v2",
+   "git": "9fc897e",
+   "started": "2026-11-04 10:15:53"
+  },
+  {
+   "variants": [
+    "yolo+prism",
+    "yolo+prism@desc",
+    "omniparser+prism",
+    "omniparser+prism@desc"
+   ],
+   "same_cases_as": "yolo+luna,yolo+luna@desc,omniparser+luna,omniparser+luna@desc",
+   "allow_none": false,
+   "limit_per_domain": null,
+   "domains": null,
+   "llm": "gpt-6-luna",
+   "mock": false,
+   "dataset": "HongxinLi/ScreenSpot_v2",
+   "git": "9fc897e",
+   "started": "2026-11-04 10:20:41"
+  }
  ]
 }
