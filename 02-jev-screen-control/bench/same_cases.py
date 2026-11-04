@@ -25,19 +25,27 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--run", default="openai-full")
     ap.add_argument("--cases-from", default="yolo+luna,yolo+luna@desc,omniparser+luna,omniparser+luna@desc")
+    ap.add_argument("--sample", type=int, help="score only the seed-0 sample of that size (as screenspot --sample)")
+    ap.add_argument("--out", default="SAME_CASES.md")
     a = ap.parse_args()
     rows = read_jsonl(RESULTS / "screenspot" / a.run / "cases.jsonl")
     cases = None
     for v in a.cases_from.split(","):
         ok = {r["idx"] for r in rows if r["variant"] == v and not _api_error(r.get("error") or "")}
         cases = ok if cases is None else cases & ok
+    if a.sample:  # the same seed-0 subset `screenspot --sample` ran on
+        import random
+        pool = sorted(cases)
+        random.Random(0).shuffle(pool)
+        cases = set(pool[: a.sample])
     by_v = defaultdict(dict)
     for r in rows:
         if r["idx"] in cases and not _api_error(r.get("error") or ""):
             by_v[r["variant"]][r["idx"]] = r  # last row per (variant, idx)
     variants = [v for v in ORDER if v in by_v] + sorted(v for v in by_v if v not in ORDER)
 
-    lines = [f"Same {len(cases)} ScreenSpot-v2 instructions for every variant (those all of {a.cases_from} answered).\n",
+    lines = [f"Same {len(cases)} ScreenSpot-v2 instructions for every variant (those all of {a.cases_from} answered"
+             + (f"; the seed-0 sample of {a.sample}" if a.sample else "") + ").\n",
              "| Variant | n | Accuracy | Text targets | Icon targets | ECE | Acc. on most-confident half | Pick latency (p50) |",
              "|---|---|---|---|---|---|---|---|"]
     for v in variants:
@@ -52,7 +60,7 @@ def main():
         lines.append(f"| {nice(v)} | {len(rs)} | **{pct(hit(rs))}** | {pct(hit(text))} | {pct(hit(icon))} | "
                      f"{'—' if e != e else f'{e:.3f}'} | {pct(half)} | {f'{st.median(lat):.2f} s' if lat else '—'} |")
     md = "\n".join(lines) + "\n"
-    out = RESULTS / "report" / "SAME_CASES.md"
+    out = RESULTS / "report" / a.out
     out.write_text(md)
     print(md)
 
