@@ -57,7 +57,7 @@ def step_input(task: str, step: Step, screen: Screen) -> str:
 class DecisionSelector:
     def __init__(self, model: str = "typesafe-ai/jev"):
         self.model = model
-        self.name = "jev" if model == "typesafe-ai/jev" else model.split("/")[-1]
+        self.name = {"typesafe-ai/jev": "jev", "sarvam/sarvam-prism": "prism"}.get(model, model.split("/")[-1])
         self.client = DecisionClient(model)
 
     async def select(self, task: str, step: Step, screen: Screen, allow_none: bool = True) -> Selection:
@@ -128,11 +128,13 @@ class SomSelector:
 
 
 def make_selector(spec: str):
-    """jev | luna | decision:<model> | llm[:<model>] | som"""
+    """jev | luna | prism | decision:<model> | llm[:<model>] | som"""
     if spec == "jev":
         return DecisionSelector("typesafe-ai/jev")
     if spec == "luna":
         return DecisionSelector("openai/gpt-6-luna")
+    if spec == "prism":
+        return DecisionSelector("sarvam/sarvam-prism")
     if spec.startswith("decision:"):
         return DecisionSelector(spec.split(":", 1)[1])
     if spec == "llm" or spec.startswith("llm:"):

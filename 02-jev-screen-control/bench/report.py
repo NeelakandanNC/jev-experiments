@@ -23,8 +23,8 @@ from .miniwob import summarize as mw_summarize  # noqa: E402
 from .screenspot import summarize as ss_summarize  # noqa: E402
 
 OUT = RESULTS / "report"
-COLORS = {"jev": "#7c3aed", "luna": "#0ea5e9", "llm": "#f59e0b", "som": "#64748b", "llm-coords": "#ef4444"}
-PICKER = {"jev": "Jev (decision)", "luna": "gpt-6-luna decision", "llm": "gpt-6-luna chat picks id"}
+COLORS = {"jev": "#7c3aed", "prism": "#16a34a", "luna": "#0ea5e9", "llm": "#f59e0b", "som": "#64748b", "llm-coords": "#ef4444"}
+PICKER = {"jev": "Jev (decision)", "prism": "Sarvam Prism decision", "luna": "gpt-6-luna decision", "llm": "gpt-6-luna chat picks id"}
 DETECTOR = {"yolo": "our YOLO", "omniparser": "OmniParser", "dom": "DOM boxes"}
 
 

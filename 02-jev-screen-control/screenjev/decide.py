@@ -33,15 +33,21 @@ OPENAI_BASE_URL = "https://api.openai.com/v1"
 MAX_CHOICES = 255
 # List input price per 1M tokens, for responses that don't report cost (OpenAI direct).
 # Decision calls bill input only. Check https://openai.com/api/pricing before quoting.
-INPUT_PRICE_PER_MTOK = {"gpt-6-luna": 0.10}
+# Sarvam Prism: Rs 4 per 1M input tokens (output is free), converted at SCREENJEV_INR_PER_USD (default 88).
+INR_PER_USD = float(os.getenv("SCREENJEV_INR_PER_USD", "88"))
+INPUT_PRICE_PER_MTOK = {"gpt-6-luna": 0.10, "sarvam-prism": 4 / INR_PER_USD}
 
 
 OPENROUTER_DECISIONS_URL = "https://openrouter.ai/api/alpha/decisions"
+# Sarvam Prism speaks the same native shape (state + {name: {type, instructions, criteria}}).
+SARVAM_DECISIONS_URL = "https://api.sarvam.ai/v2/systemone"
 OPENROUTER_JEV = "typesafe/jev-1.13"
 
 
 def backend(model: str) -> tuple[str, str, str]:
     """(base_url, api key env var, model name to send) for a decision model slug."""
+    if model in ("sarvam/sarvam-prism", "sarvam-prism"):
+        return SARVAM_DECISIONS_URL, "SARVAM_API_KEY", "sarvam-prism"
     if model.startswith("openai/") and os.getenv("OPENAI_API_KEY") and not os.getenv("SCREENJEV_FORCE_GATEWAY"):
         return OPENAI_BASE_URL, "OPENAI_API_KEY", model.split("/", 1)[1]
     if model == "typesafe-ai/jev" and os.getenv("SCREENJEV_JEV_VIA") == "openrouter":
@@ -146,7 +152,7 @@ class DecisionClient:
             key = api_key or os.getenv(key_var)
             if not key:
                 raise DecisionError(f"{key_var} is not set (needed for {model}; SCREENJEV_MOCK=1 for a dry run)")
-            if url == OPENROUTER_DECISIONS_URL:
+            if url in (OPENROUTER_DECISIONS_URL, SARVAM_DECISIONS_URL):
                 self._client = _NativeClient(url, key, timeout, max_retries)
             else:
                 self._client = AsyncOpenAI(api_key=key, base_url=base_url or url, timeout=timeout,

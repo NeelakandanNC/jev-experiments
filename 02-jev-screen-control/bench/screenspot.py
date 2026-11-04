@@ -80,9 +80,15 @@ def inside(pt, box) -> bool:
 async def run(a) -> None:
     out = run_dir("screenspot", a.run)
     variants = a.variants.split(",")
-    cfg = {"variants": variants, "allow_none": a.allow_none, "limit_per_domain": a.limit, "domains": a.domains, "llm": a.llm, "mock": is_mock(),
+    cfg = {"variants": variants, "same_cases_as": a.same_cases_as, "allow_none": a.allow_none, "limit_per_domain": a.limit, "domains": a.domains, "llm": a.llm, "mock": is_mock(),
            "dataset": DATASET, "git": git_rev(), "started": time.strftime("%Y-%m-%d %H:%M:%S")}
-    (out / "config.json").write_text(json.dumps(cfg, indent=1))
+    cfg_path = out / "config.json"
+    if cfg_path.exists():  # adding variants to an existing run: keep its config, log this invocation
+        prev = json.loads(cfg_path.read_text())
+        prev.setdefault("later_runs", []).append(cfg)
+        cfg_path.write_text(json.dumps(prev, indent=1))
+    else:
+        cfg_path.write_text(json.dumps(cfg, indent=1))
     path = out / "cases.jsonl"
     if a.retry_errors:  # drop rows that failed for API reasons (rate limits, credits, network); keep real answers
         rows = read_jsonl(path)
@@ -171,8 +177,17 @@ async def run(a) -> None:
                        "error": f"{type(e).__name__}: {e}"}
         await write({**sample, "variant": "llm-coords", **row, "hit": inside(row["pred"], sample["gt"])})
 
+    only: set[int] | None = None
+    if a.same_cases_as:  # exactly the instructions these variants answered (for a like-for-like comparison)
+        prior = read_jsonl(path)
+        for v in a.same_cases_as.split(","):
+            ok = {r["idx"] for r in prior if r["variant"] == v and not _api_error(r.get("error") or "")}
+            only = ok if only is None else only & ok
+        print(f"restricted to {len(only)} instructions answered by {a.same_cases_as}")
     pending: set[asyncio.Task] = set()
     for sample, img in load_samples(a.limit, a.domains.split(",") if a.domains else None):
+        if only is not None and sample["idx"] not in only:
+            continue
         for det, sels in by_det.items():
             todo = [s for s in sels if (f"{det}+{s}" if det != "none" else s, sample["idx"]) not in done]
             if not todo:
@@ -305,6 +320,7 @@ def main():
     ap.add_argument("--allow-none", action="store_true", help="let pickers answer 'none' (the target is always on screen here)")
     ap.add_argument("--run", help="results/screenspot/<run> (resumes if it exists)")
     ap.add_argument("--retry-errors", action="store_true", help="re-run rows that failed for API reasons")
+    ap.add_argument("--same-cases-as", metavar="VARIANTS", help="only the instructions these variants answered")
     ap.add_argument("--rescore", metavar="RUN", help="recompute clicks/hits of a finished run offline (no API calls)")
     a = ap.parse_args()
     asyncio.run(rescore(a.rescore) if a.rescore else run(a))
